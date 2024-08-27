@@ -1,6 +1,6 @@
 # parameters ----
 p = 0.5
-n = 100
+n = 300
 t = 5
 dose = 1
 m = 1000
@@ -26,7 +26,6 @@ for (rep in 1:m)  {
   ## Baseline Covariates
   'h0 <- rep(1, n) # intercept
   h1 <- rbinom(n, 1, 0.2) # binary covariate
-  h2 <- h1 ^ 2
   h2 <- rnorm(n) # continuous covariate # or ignore this variable
   h <- cbind(h0, h1, h2)
 
@@ -47,9 +46,10 @@ for (rep in 1:m)  {
   Y <- h %*% eta_t + beta_t * a + eps'
 
 
-  # Fourth Setting ----
+  # Fourth Setting: Incorporate H ----
   ## Baseline Covariates
-  h0 <- rep(1, n) # intercept
+  setting="fourth"
+  'h0 <- rep(1, n) # intercept
   h1 <- rbinom(n, 1, 0.5) # binary covariate
   h2 <- rnorm(n) # continuous covariate # or ignore this variable
   h <- cbind(h0, h1, h2)
@@ -61,16 +61,17 @@ for (rep in 1:m)  {
   s <- cbind(s0, s1, s2)
 
   ## Outcome Generation
-  beta <- c(5, 0, 0)
-  eta <- c(20, 10, 0)
+  beta <- c(20, 0, 0)
+  eta <- c(30, 20, 10)
   beta_t <- outer(beta , rep(1, t))
   eta_t <- outer(eta , rep(1, t))
 
   eps <- matrix(rnorm(n * 5), nrow = n, ncol = 5)
-  Y <- h %*% eta_t + (s %*% beta_t) * a #+ eps
+  Y <- h %*% eta_t + (s %*% beta_t) * a + eps'
 
-  # Fifth Setting ----
-  '## Baseline Covariates
+  # Fifth Setting: Misspecification----
+  ## Baseline Covariates
+  setting="fifth"
   h0 <- rep(1, n) # intercept
   #h1 <- rnorm(n, 1, 0.2) # binary covariate
   h1 <- rnorm(n) # continuous covariate
@@ -84,20 +85,16 @@ for (rep in 1:m)  {
   s <- cbind(s0, s1, s2)
 
   ## Outcome Generation
-  beta <- c(100, 0, 0)
+  beta <- c(20, 0, 0)
   eta <- c(30, 20, 10)
   beta_t <- outer(beta / 5, rep(1, t))
   eta_t <- outer(eta / 5, rep(1, t))
 
   eps <- matrix(rnorm(n * 5), nrow = n, ncol = 5)
-  Y <- h %*% eta_t + (s %*% beta_t) * a + eps'
+  Y <- h %*% eta_t + (s %*% beta_t) * a + eps
 
 
-  # in the model include only h0, h1. Omit h2. this is still correctly specified because h2 is absorbed into eps.
-  # in the model include h0, h1, h3. this is still not sufficiently misspecified.
-  # use line 27 to make incorrectly specify
-
-
+  # Put all data together into a data frame. ----
   colnames(Y) <- paste0("Y", 1:t)
   colnames(h) <- paste0("h", 1:ncol(h))
   colnames(s) <- paste0("s", 1:ncol(s))
@@ -117,7 +114,7 @@ for (rep in 1:m)  {
 
 # get current script directory
 script_dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
-filename <- paste("fourth_setting","_n",n,"_m",m,"_t",t,"_p",p,"_beta",beta[1],"_dose",dose,".rds", sep = "")
+filename <- paste(setting,"_setting","_n",n,"_m",m,"_t",t,"_p",p,"_beta",beta[1],"_dose",dose,".rds", sep = "")
 saveRDS(dfs, paste(script_dir, "simulated_data",filename, sep = "/"))
 
 

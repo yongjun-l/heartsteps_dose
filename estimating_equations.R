@@ -91,6 +91,43 @@ ee2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
 }
 
 # Consider H ----
+# We consider H Approach 2 m1 is actual cumulati
+ee4.1 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
+  T.dp <- ncol(y)
+  a_5 <- generate_regimes(ncol(a), dose)
+  #U <- matrix(0, nrow = ncol(s), ncol = 1)
+  U <- 0
+  for (decision in 1:T.dp) {
+    df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
+    fit <- lm(y ~ -1 + h1 + h2 + h3 + a, data = df)
+    summary(fit)
+
+    df.m0 <- df
+    df.m1 <- df
+
+    df.m1$a <- 1
+    df.m0$a <- 0
+
+    for (regime in 1:nrow(a_5)) {
+
+
+      m1 <- predict(fit, newdata = df.m1)
+      m0 <- predict(fit, newdata = df.m0)
+
+      I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
+      I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
+
+      U <- U + sum(
+        I_at/p_a[,decision] * (y[,decision] - m1) -
+          I_0t/p_a[,decision] * (y[,decision] - m0) +
+          m1 - m0 - beta / T.dp
+      )
+    }
+  }
+  U <- U / nrow(y)
+  return(U)
+}
+
 # We consider H Approach 2 m1 is the actual treatment assigned.
 ee4.2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   T.dp <- ncol(y)
@@ -168,7 +205,8 @@ ee4.4 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   U <- 0
   for (decision in 1:T.dp) {
     df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
-    fit <- lm(y ~ -1 + h1 + h2 + h3 + a, data = df)
+    df$h22 <- df$h2^2
+    fit <- lm(y ~ -1 + h1 + h2 + h22 + a, data = df)
     summary(fit)
 
     df.m0 <- df
@@ -196,6 +234,43 @@ ee4.4 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
 }
 
 # Misspecification ----
+# We consider H Approach 2 m1 is the actual treatment assigned.
+ee5.1 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
+  T.dp <- ncol(y)
+  a_5 <- generate_regimes(ncol(a), dose)
+  #U <- matrix(0, nrow = ncol(s), ncol = 1)
+  U <- 0
+  for (decision in 1:T.dp) {
+    df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
+    fit <- lm(y ~ -1 + h1 + h2 + a, data = df)
+    summary(fit)
+
+    df.m0 <- df
+    df.m1 <- df
+
+    df.m1$a <- 1
+    df.m0$a <- 0
+
+    for (regime in 1:nrow(a_5)) {
+
+
+      m1 <- predict(fit, newdata = df.m1)
+      m0 <- predict(fit, newdata = df.m0)
+
+      I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
+      I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
+
+      U <- U + sum(
+        I_at/p_a[,decision] * (y[,decision] - m1) -
+          I_0t/p_a[,decision] * (y[,decision] - m0) +
+          m1 - m0 - beta / T.dp
+      )
+    }
+  }
+  U <- U / nrow(y)
+  return(U)
+}
+
 # We consider H Approach 2 m1 is the actual treatment assigned.
 ee5.2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   T.dp <- ncol(y)

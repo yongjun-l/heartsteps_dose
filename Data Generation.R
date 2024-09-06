@@ -1,6 +1,6 @@
 # parameters ----
 p = 0.5
-n = 300
+n = 100
 t = 5
 dose = 1
 m = 1000
@@ -48,8 +48,8 @@ for (rep in 1:m)  {
 
   # Fourth Setting: Incorporate H ----
   ## Baseline Covariates
-  setting="fourth"
-  'h0 <- rep(1, n) # intercept
+  'setting="fourth"
+  h0 <- rep(1, n) # intercept
   h1 <- rbinom(n, 1, 0.5) # binary covariate
   h2 <- rnorm(n) # continuous covariate # or ignore this variable
   h <- cbind(h0, h1, h2)
@@ -87,8 +87,8 @@ for (rep in 1:m)  {
   ## Outcome Generation
   beta <- c(20, 0, 0)
   eta <- c(30, 20, 10)
-  beta_t <- outer(beta / 5, rep(1, t))
-  eta_t <- outer(eta / 5, rep(1, t))
+  beta_t <- outer(beta, rep(1, t))
+  eta_t <- outer(eta, rep(1, t))
 
   eps <- matrix(rnorm(n * 5), nrow = n, ncol = 5)
   Y <- h %*% eta_t + (s %*% beta_t) * a + eps

@@ -5,27 +5,25 @@ library(nleqslv)
 
 # Simulated data ----
 # get current script directory
+
 script_dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
-script_dir <- getwd()
+#script_dir <- getwd()
 
 
-dfs <- readRDS(paste(script_dir, "simulated_data","first_setting.rds", sep = "/"))
+# first setting
+filename <- "first_setting.rds"
 
 # second setting beta = (100, 20, 0) eta = (50, 0, 0)
-dfs <- readRDS(paste(script_dir, "simulated_data","second_setting.rds", sep = "/"))
-dfs <- readRDS(paste(script_dir, "simulated_data","third_setting.rds", sep = "/"))
-
 filename <- "second_setting_n150_m1000_t5_p0.5_dose1.rds"
 filename <- "second_setting_n500_m1000_t5_p0.5_dose1.rds"
+
 # fourth setting
-filename <- "fourth_setting_n100_m1000_t5_p0.5_dose1.rds"
-# fourth setting debug
 filename <- "fourth_setting_n100_m1000_t5_p0.5_beta20_dose1.rds"
 filename <- "fourth_setting_n300_m1000_t5_p0.5_beta20_dose1.rds"
 
 # fifth setting - check robustness with misspecification
-filename <- "fifth_setting_n100_m1000_t5_p0.5_beta20_dose1.rds"
 filename <- "fifth_setting_n300_m1000_t5_p0.5_beta20_dose1.rds"
+filename <- "fifth_setting_n100_m1000_t5_p0.5_beta20_dose1.rds"
 
 dfs <- readRDS(paste(script_dir, "simulated_data",filename, sep = "/"))
 
@@ -34,24 +32,27 @@ m <- length(dfs)
 dfs[[1]]$params
 
 dose=1
-ee <- c(0,0,0,0,0)
-ee_msm <- c(0,0,0,0,0)
-ee <- matrix(0, nrow = m, ncol = 5*3 )
+# ee <- c(0,0,0,0,0)
+# ee_msm <- c(0,0,0,0,0)
+# ee <- matrix(0, nrow = m, ncol = 5*3 )
 ee.1 <- rep(0, m)
 
-ee.2 <- matrix(0, nrow = m, ncol = 3)
+# ee.2 <- matrix(0, nrow = m, ncol = 3)
 
+ee.4.1 <- rep(0, m)
 ee.4.2 <- rep(0, m)
 ee.4.3 <- rep(0, m)
 ee.4.4 <- rep(0, m)
 
+ee.5.1 <- rep(0, m)
 ee.5.2 <- rep(0, m)
 ee.5.3 <- rep(0, m)
 ee.5.4 <- rep(0, m)
 
-ee.boruvka <- rep(0, m)
+# ee.boruvka <- rep(0, m)
 
-#m=100
+m=100
+setting = 5
 
 for (rep in 1:m) {
   #rep = 1
@@ -85,14 +86,10 @@ for (rep in 1:m) {
   #ee1 <- cbind(ee, c(rslt1$x, rslt2$x, rslt3$x, rslt4$x, rslt5$x))
   #print(rep)
 
-
-
   # Setting 2: Covariates ----
   'init_beta <- matrix(0, nrow=ncol(s), ncol=1)
   rslt1 <- nleqslv(init_beta, function(beta) ee2(beta, y, a, h, s, p_a, cum_d, dose=1))
   ee.second[rep, 1:3] <- rslt1$x'
-
-
 
   # Setting 3: Boruvka Comparison ----
   'y.agg <- rowSums(y)
@@ -129,29 +126,53 @@ for (rep in 1:m) {
   ee_msm <- cbind(ee_msm, coef(fit1)[2:6])'
 
   # Setting 4: Robust EE ----
-  init_beta <- 0
-  rslt1 <- nleqslv(init_beta, function(beta) ee1( beta, y, a, h, s, p_a, cum_d, dose ))
-  rslt4.2 <- nleqslv(init_beta, function(beta) ee4.2( beta, y, a, h, s, p_a, cum_d, dose ))
-  rslt4.3 <- nleqslv(init_beta, function(beta) ee4.3( beta, y, a, h, s, p_a, cum_d, dose ))
-  rslt4.4 <- nleqslv(init_beta, function(beta) ee4.4( beta, y, a, h, s, p_a, cum_d, dose ))
+  if (setting==4) {
+    init_beta <- 0
+    rslt1 <- nleqslv(init_beta, function(beta) ee1( beta, y, a, h, s, p_a, cum_d, dose ))
+    rslt4.1 <- nleqslv(init_beta, function(beta) ee4.1( beta, y, a, h, s, p_a, cum_d, dose ))
+    rslt4.2 <- nleqslv(init_beta, function(beta) ee4.2( beta, y, a, h, s, p_a, cum_d, dose ))
+    rslt4.3 <- nleqslv(init_beta, function(beta) ee4.3( beta, y, a, h, s, p_a, cum_d, dose ))
+    rslt4.4 <- nleqslv(init_beta, function(beta) ee4.4( beta, y, a, h, s, p_a, cum_d, dose ))
 
-  ee.1[rep] <- rslt1$x
-  ee.4.2[rep] <- rslt4.2$x
-  ee.4.3[rep] <- rslt4.3$x
-  ee.4.4[rep] <- rslt4.4$x
-
+    ee.1[rep] <- rslt1$x
+    ee.4.1[rep] <- rslt4.1$x
+    ee.4.2[rep] <- rslt4.2$x
+    ee.4.3[rep] <- rslt4.3$x
+    ee.4.4[rep] <- rslt4.4$x
+  }
 
   # Setting 5: Robust EE misspecified----
-  init_beta <- 0
-  rslt1 <- nleqslv(init_beta, function(beta) ee1( beta, y, a, h, s, p_a, cum_d, dose ))
-  rslt5.2 <- nleqslv(init_beta, function(beta) ee5.2( beta, y, a, h, s, p_a, cum_d, dose ))
-  rslt5.3 <- nleqslv(init_beta, function(beta) ee5.3( beta, y, a, h, s, p_a, cum_d, dose ))
-  rslt5.4 <- nleqslv(init_beta, function(beta) ee5.4( beta, y, a, h, s, p_a, cum_d, dose ))
+  if (setting==5) {
+    init_beta <- 0
 
-  ee.1[rep] <- rslt1$x
-  ee.5.2[rep] <- rslt5.2$x
-  ee.5.3[rep] <- rslt5.3$x
-  ee.5.4[rep] <- rslt5.4$x
+
+    rslt1 <- nleqslv(init_beta, function(beta) ee1( beta, y, a, h, s, p_a, cum_d, dose ))
+    rslt4.1 <- nleqslv(init_beta, function(beta) ee4.1( beta, y, a, h, s, p_a, cum_d, dose ))
+    rslt4.2 <- nleqslv(init_beta, function(beta) ee4.2( beta, y, a, h, s, p_a, cum_d, dose ))
+    rslt4.3 <- nleqslv(init_beta, function(beta) ee4.3( beta, y, a, h, s, p_a, cum_d, dose ))
+    rslt4.4 <- nleqslv(init_beta, function(beta) ee4.4( beta, y, a, h, s, p_a, cum_d, dose ))
+
+    ee.1[rep] <- rslt1$x
+    ee.4.1[rep] <- rslt4.1$x
+    ee.4.2[rep] <- rslt4.2$x
+    ee.4.3[rep] <- rslt4.3$x
+    ee.4.4[rep] <- rslt4.4$x
+
+
+
+
+    rslt1 <- nleqslv(init_beta, function(beta) ee1( beta, y, a, h, s, p_a, cum_d, dose ))
+    rslt5.1 <- nleqslv(init_beta, function(beta) ee5.1( beta, y, a, h, s, p_a, cum_d, dose ))
+    rslt5.2 <- nleqslv(init_beta, function(beta) ee5.2( beta, y, a, h, s, p_a, cum_d, dose ))
+    rslt5.3 <- nleqslv(init_beta, function(beta) ee5.3( beta, y, a, h, s, p_a, cum_d, dose ))
+    rslt5.4 <- nleqslv(init_beta, function(beta) ee5.4( beta, y, a, h, s, p_a, cum_d, dose ))
+
+    ee.1[rep] <- rslt1$x
+    ee.5.1[rep] <- rslt5.1$x
+    ee.5.2[rep] <- rslt5.2$x
+    ee.5.3[rep] <- rslt5.3$x
+    ee.5.4[rep] <- rslt5.4$x
+  }
 
 }
 
@@ -176,29 +197,45 @@ for (rep in 1:m) {
 # hist(ee[,2], breaks = 20, main = "beta2")
 # hist(ee[,3], breaks = 20, main = "beta3")
 
+
 mean(ee.1[1:m])
 median(ee.1[1:m])
 var(ee.1[1:m])
+cat("\n\n")
+mean(ee.4.1[1:m])
+median(ee.4.1[1:m])
+var(ee.4.1[1:m])
+cat("\n\n")
 mean(ee.4.2[1:m])
 median(ee.4.2[1:m])
 var(ee.4.2[1:m])
+cat("\n\n")
 mean(ee.4.3[1:m])
 median(ee.4.3[1:m])
 var(ee.4.3[1:m])
+cat("\n\n")
 mean(ee.4.4[1:m])
 median(ee.4.4[1:m])
 var(ee.4.4[1:m])
-
+cat("\n\n")
+cat("\n\n")
 
 mean(ee.1[1:m])
 median(ee.1[1:m])
 var(ee.1[1:m])
+cat("\n\n")
+mean(ee.5.1[1:m])
+median(ee.5.1[1:m])
+var(ee.5.1[1:m])
+cat("\n\n")
 mean(ee.5.2[1:m])
 median(ee.5.2[1:m])
 var(ee.5.2[1:m])
+cat("\n\n")
 mean(ee.5.3[1:m])
 median(ee.5.3[1:m])
 var(ee.5.3[1:m])
+cat("\n\n")
 mean(ee.5.4[1:m])
 median(ee.5.4[1:m])
 var(ee.5.4[1:m])

@@ -4,10 +4,11 @@ n = 300
 t = 5
 dose = 1
 m = 1000
+days = 10
 
-a <- matrix(nrow=n, ncol = t)
-cum_d <- matrix(0, nrow = n, ncol = t)
-p_a <- matrix(nrow=n, ncol = t)
+a <- matrix(nrow=n*days, ncol = t)
+cum_d <- matrix(0, nrow = n*days, ncol = t)
+p_a <- matrix(nrow=n*days, ncol = t)
 
 
 # data generation ----
@@ -17,7 +18,7 @@ for (rep in 1:m)  {
   #rep = 1
   for (decision in 1:t) {
     #decision = 1
-    a[,decision] <- rbinom(n, 1, p)
+    a[,decision] <- rbinom(n*days, 1, p)
     cum_d[,decision] <- if(decision==1) {a[,1:decision]} else {rowSums(a[,1:decision])}
     p_a[, decision] <- (p^cum_d[,decision]) * ((1-p)^(decision - cum_d[,decision]))
   }
@@ -69,9 +70,8 @@ for (rep in 1:m)  {
   Y <- h %*% eta_t + (s %*% beta_t) * a + eps'
 
   # Fifth Setting: Misspecification----
-  # Sixth Setting: Misspecification with non empty S. ----
   ## Baseline Covariates
-  setting="sixth"
+  setting="seventh"
   h0 <- rep(1, n) # intercept
   #h1 <- rnorm(n, 1, 0.2) # binary covariate
   h1 <- rnorm(n) # continuous covariate
@@ -84,13 +84,17 @@ for (rep in 1:m)  {
   s2 <- rnorm(n) # continuous covariate
   s <- cbind(s0, s1, s2)
 
+  #repeat each row 5 times
+  h <- h[rep(1:n, each = days),]
+  s <- s[rep(1:n, each = days),]
+
   ## Outcome Generation
   beta <- c(20, 10, 5)
   eta <- c(30, 20, 10)
   beta_t <- outer(beta, rep(1, t))
   eta_t <- outer(eta, rep(1, t))
 
-  eps <- matrix(rnorm(n * 5), nrow = n, ncol = 5)
+  eps <- matrix(rnorm(n * days * 5), nrow = n * days, ncol = 5)
   Y <- h %*% eta_t + (s %*% beta_t) * a + eps
 
 
@@ -114,7 +118,7 @@ for (rep in 1:m)  {
 
 # get current script directory
 script_dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
-filename <- paste(setting,"_setting","_n",n,"_m",m,"_t",t,"_p",p,"_beta",beta[1],"_dose",dose,".rds", sep = "")
+filename <- paste(setting,"_setting","_n",n,"_m",m,"_days",days,"_t",t,"_p",p,"_beta",beta[1],"_dose",dose,".rds", sep = "")
 saveRDS(dfs, paste(script_dir, "simulated_data",filename, sep = "/"))
 
 

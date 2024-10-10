@@ -33,27 +33,7 @@ get_p_a <- function(a, p) {
 }
 
 # Estimating Equations ----
-ee0 <- function( beta, y, a, h, s, p_a, d_w, dose, p ) { # we don't consider any covariates
-  #dose = 1
-  #p = 0.5
-  a_5 <- generate_regimes(ncol(a), dose)
-  U <- matrix(0, nrow = nrow(a_5), ncol = ncol(y))
-  for (decision in 1:ncol(y)) {
-    #decision = 2
-    for (regime in 1:nrow(a_5)) {
-      #regime = 1
-      I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
-      I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
-      #w <- d_w[,decision] * I_at/p_a[,decision] - I_0t/p_a[,decision]
-      w <- (1/5) * I_at/p_a[,decision] - I_0t/p_a[,decision]
-      U[regime, decision] <- sum( w * y[,decision] - beta/5 )
-      #U <- U + sum( (1/5) * w * ( y[,decision] ) )
-    }
-  }
-  U <- sum(U) / nrow(y)
-  return(U)
-}
-
+## Setting 1: Marginal effect ----
 ee1 <- function( beta, y, a, h, s, p_a, cum_d, dose ) { # we don't consider any covariates
 
   T.dp <- ncol(y)
@@ -72,7 +52,7 @@ ee1 <- function( beta, y, a, h, s, p_a, cum_d, dose ) { # we don't consider any 
   return(U)
 }
 
-# Consider S ----
+## Setting 2: Consider S ----
 ee2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   T.dp <- ncol(y)
   a_5 <- generate_regimes(ncol(a), dose)
@@ -90,7 +70,7 @@ ee2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   return(U)
 }
 
-# Consider H ----
+## Setting 4: Consider H ----
 # We consider H Approach 2 m1 is actual cumulati
 ee4.1 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   T.dp <- ncol(y)
@@ -188,9 +168,9 @@ ee4.3 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
 
       U <- U + sum(
         I_at/p_a[,decision] * (y[,decision] - m1) -
-        I_0t/p_a[,decision] * (y[,decision] - m0) +
-        m1 - m0 - beta / T.dp
-        )
+          I_0t/p_a[,decision] * (y[,decision] - m0) +
+          m1 - m0 - beta / T.dp
+      )
     }
   }
   U <- U / nrow(y)
@@ -206,7 +186,7 @@ ee4.4 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   for (decision in 1:T.dp) {
     df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
     df$h22 <- df$h2^2
-    fit <- lm(y ~ -1 + h1 + h2 + h22 + a, data = df)
+    fit <- lm(y ~ -1 + h1 + h2 + h3 + a, data = df)
     summary(fit)
 
     df.m0 <- df
@@ -233,7 +213,7 @@ ee4.4 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   return(U)
 }
 
-# Misspecification ----
+## Setting 5: Misspecification ----
 # We consider H Approach 2 m1 is the actual treatment assigned.
 ee5.1 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   T.dp <- ncol(y)
@@ -376,8 +356,92 @@ ee5.4 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
 }
 
 
+## Setting 6: Misspecification w/ S ----
+ee6.4 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
+  T.dp <- ncol(y)
+  a_5 <- generate_regimes(ncol(a), dose)
+  #U <- matrix(0, nrow = ncol(s), ncol = 1)
+  U <- 0
+  for (decision in 1:T.dp) {
+    df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
+    fit <- lm(y ~ -1 + h1 + h2 + a, data = df)
+    summary(fit)
 
-# We consider H and S ----
+    df.m0 <- df
+    df.m1 <- df
+
+    for (regime in 1:nrow(a_5)) {
+      df.m1$a <- a_5[regime, decision]
+      df.m0$a <- 0
+
+      m1 <- predict(fit, newdata = df.m1)
+      m0 <- predict(fit, newdata = df.m0)
+
+      I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
+      I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
+
+      U <- U + t(s) %*% (I_at/p_a[,decision] * (y[,decision] - m1) -
+                         I_0t/p_a[,decision] * (y[,decision] - m0) +
+                         m1 - m0 - ( as.matrix(s) %*% beta )/T.dp)
+    }
+  }
+  U <- U / nrow(y)
+  return(U)
+}
+
+
+## Setting 7: Multiple days ----
+# Identical to ee6.4 right now but under different assumptions, this may change.
+# We are treating all of the days as independent.
+# So, it is equivalent as if all days were just 1 day.
+
+# Correlation ----
+## Correlation Setting 1: treatment affects immediate outcome.
+##                        Time varying S,
+##                        baseline H,
+##                        correlated error per participant
+
+ee.cor.1 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
+  T.dp <- ncol(y)
+  a_5 <- generate_regimes(ncol(a), dose)
+  #U <- matrix(0, nrow = ncol(s), ncol = 1)
+  U <- 0
+  for (decision in 1:T.dp) {
+    s.decision <- cbind(1, s[,1])
+    df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
+    fit <- lm(y ~ -1 + h + a, data = df)
+    summary(fit)
+
+    df.m0 <- df
+    df.m1 <- df
+
+    for (regime in 1:nrow(a_5)) {
+      df.m1$a <- a_5[regime, decision]
+      df.m0$a <- 0
+
+      m1 <- predict(fit, newdata = df.m1)
+      m0 <- predict(fit, newdata = df.m0)
+
+      I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
+      I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
+
+      U <- U + t(s.decision) %*% (I_at/p_a[,decision] * (y[,decision] - m1) -
+                           I_0t/p_a[,decision] * (y[,decision] - m0) +
+                           m1 - m0 - ( as.matrix(s.decision) %*% beta )/T.dp)
+    }
+  }
+  U <- U / nrow(y)
+  return(U)
+}
+
+
+
+
+
+
+
+
+
 
 
 

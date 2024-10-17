@@ -5,21 +5,24 @@ format: revealjs
 editor: visual
 ---
 
-## Quarto
+## Introduction
 
-Quarto enables you to weave together content and executable code into a finished presentation. To learn more about Quarto presentations see <https://quarto.org/docs/presentations/>.
+-   mHealth microrandomized trial
 
-## Bullets
+-   Causal excursion effect
 
-When you click the **Render** button a document will be generated that includes:
+-   Optimal dose
 
--   Content authored with markdown
--   Output from executable code
+## Robust Estimating Equation
 
-## Code
+$some math formula here$
 
-When you click the **Render** button a presentation will be generated that includes both content and the output of embedded code. You can embed code like this:
+## Issues with simulation run time
 
-```{r}
-1 + 1
-```
+-   Bottlenecks
+
+-   Vectorization
+
+-   Parallelized Bootstrapping
+
+## Bottleneck

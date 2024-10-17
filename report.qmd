@@ -3,25 +3,74 @@ title: "Optimal Dose for mHealth Interventions"
 author: "Yongjun Lee"
 format: pdf
 editor: visual
+header-includes:
+  - \usepackage{amsmath}
+  - \usepackage{amssymb}
+  - \usepackage{bbm}
 ---
 
-## Quarto
+# Introduction 
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+Mobile health (mHealth) refers to the use of mobile devices, such as smartphones and wearable devices, to deliver healthcare services and interventions, and also detect the current health status of the individual. These interventions are usually intended to promote healthy behavioral change. For example, we may consider sending smartphone push notification for medication reminders or physical activity suggestions for sedentary workers. The efficacy of these interventions are analyzed through microrandomized studies where participants are randomized to treatment (e.g. push notification) multiple times throughout the day, and outcome is also recorded through a smart device (e.g. step count).
 
-## Running Code
+In the mHealth literature, previous research has examined the delayed effects of notifications or the immediate treatment effect within a 30-minute window following an intervention. However, focusing on a single treatment effect may not be reliable since too few number of treatments might not be sufficient for the desired outcome, while an excessive number of treatments could lead to participant fatigue, potentially resulting in adverse effects. To address this issue, I am in the process of developing a method to efficiently analyze the optimal "dose" of daily treatment.
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
 
-```{r}
-1 + 1
+$$
+\footnotesize
+\tilde{u}=\sum_{t=1}^{T}\sum_{k=1}^{K} \frac{1}{{k \choose d}} \sum_{\bar{a}_{k}\in \mathcal{D}}\left(\frac{\mathbbm{1}(\bar{A}_{t}=\bar{a}_{t})}{\mathbb{P}(\bar{A}_{t}=\bar{a}_{t})} \left( Y_{t,k}-m_{1} \right) -\frac{\mathbbm{1}(\bar{A}_{t}=\bar{0}_{t})}{\mathbb{P}(\bar{A}_{t}=\bar{0}_{t})} \left( Y_{t,k}-m_{0} \right) + m_{1} - m_{2}- \frac{1}{K} S^{\top}\beta\right)\nu(S) 
+$$
+```r
+ee6.4 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
+  T.dp <- ncol(y)
+  a_5 <- generate_regimes(ncol(a), dose)
+  #U <- matrix(0, nrow = ncol(s), ncol = 1)
+  U <- 0
+  for (decision in 1:T.dp) {
+    df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
+    fit <- lm(y ~ -1 + h1 + h2 + a, data = df)
+    summary(fit)
+
+    df.m0 <- df
+    df.m1 <- df
+
+    for (regime in 1:nrow(a_5)) {
+      df.m1$a <- a_5[regime, decision]
+      df.m0$a <- 0
+
+      m1 <- predict(fit, newdata = df.m1)
+      m0 <- predict(fit, newdata = df.m0)
+
+      I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
+      I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
+
+      U <- U + t(s) %*% (I_at/p_a[,decision] * (y[,decision] - m1) -
+                         I_0t/p_a[,decision] * (y[,decision] - m0) +
+                         m1 - m0 - ( as.matrix(s) %*% beta )/T.dp)
+    }
+  }
+  U <- U / nrow(y)
+  return(U)
+}
 ```
 
-You can add options to executable code like this
 
-```{r}
-#| echo: false
-2 * 2
-```
+identify the problem with code and where I can improve efficiency
 
-The `echo: false` option disables the printing of code (only output is displayed).
+# Solution Plan
+
+## Vectorization
+
+I_0T code snippet, benchmark result
+
+## Parallel Computing
+
+bootstrap snippet and benchmark
+
+## Rcpp
+
+not sure where I'll do this.
+
+# Preliminary Results
+
+Heartsteps estimates.

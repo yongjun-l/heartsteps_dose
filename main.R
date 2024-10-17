@@ -1,5 +1,4 @@
-source("~/Library/CloudStorage/GoogleDrive-yongjun.lee5@gmail.com/My Drive/1. UCI/2024-1 Winter/Tianchen_excursion/simulations/working scripts/estimating_equations.R")
-library(rootSolve)
+source("estimating_equations.R")
 library(nleqslv)
 
 

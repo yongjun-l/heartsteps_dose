@@ -6,6 +6,7 @@ editor: visual
 ---
 
 ## Introduction
+
 -   mHealth and microrandomized trial
 
 -   Causal excursion effect
@@ -110,6 +111,7 @@ library(kableExtra)
 kable(cbind(func=c("Original", "Improved"), bench[,c("min","median","itr/sec","n_itr","total_time")])) %>%
   kable_styling("striped", full_width = F)
 ```
+
 ``` r
 I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
 I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
@@ -119,6 +121,7 @@ I_0t <- rowSums(a[, 1:decision, drop=FALSE] == matrix(zeros[[decision]], nrow=nr
 ```
 
 ## Improvement 2 - Parallel Computing
+
 ```{r}
 source("compare_parallel.R")
 bench_parallel <- bench::mark(
@@ -129,7 +132,8 @@ bench_parallel <- bench::mark(
 kable(cbind(func=c("Original", "Improved"), bench_parallel[,c("min","median","itr/sec","n_itr","total_time")])) %>%
   kable_styling("striped", full_width = F)
 ```
-```r
+
+``` r
 library(parallel)
 main.parallel <-function(dfs, m=100) {
   rslt.parallel <- mclapply(1:m, function(rep) {
@@ -156,7 +160,9 @@ main.parallel <-function(dfs, m=100) {
 ```
 
 ## Simulations
+
 ![](/sim_setting.png)
+
 ```{r}
 filename <- "seventh_setting_n50_m1000_days10_t5_p0.5_beta20_dose1.rds"
 dfs <- readRDS(paste("simulated_data",filename, sep = "/"))
@@ -193,5 +199,3 @@ colnames(rslt) <- c("n", "days", "m", "beta1", "hat1", "sd1", "beta2","hat2", "s
 kable(rslt) %>%
   kable_styling("striped", full_width = F)
 ```
-
-

@@ -46,8 +46,8 @@ nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
 ```{r, echo=FALSE, warning=FALSE,message=FALSE}
 source("main.R")
 filename <- "seventh_setting_n50_m100_days10_t5_p0.5_beta20_dose1.rds"
-dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
-
+#dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
+dfs <- readRDS(filename)
 m <- length(dfs)
 ee.6.4 <- matrix(nrow = m, ncol = 3)
 ee.6.4.improved <- matrix(nrow = m, ncol = 3)
@@ -102,7 +102,8 @@ where $H = (\bar{h}_1, \bar{h}_2, \bar{h}_3), h_1 = \bar{1}_n, h_2\sim Normal(0,
 
 ```{r, echo=FALSE, warning=FALSE,message=FALSE}
 filename <- "seventh_setting_n50_m100_days10_t5_p0.5_beta20_dose1.rds"
-dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
+#dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
+dfs <- readRDS(filename)
 timestart <- Sys.time()
 m=100
 ee.6.4 <- main.parallel(dfs, m)
@@ -112,8 +113,9 @@ means <- colMeans(ee.6.4)
 rslt1 <- c(50, 10, m, 20, means[1], sd(ee.6.4[,1]), 10, means[2], sd(ee.6.4[,2]), 5, means[3], sd(ee.6.4[,3]), run.1)
 
 filename <- "seventh_setting_n100_m100_days20_t5_p0.5_beta20_dose1.rds"
-dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
+#dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
 m=100
+dfs <- readRDS(filename)
 timestart2 <- Sys.time()
 ee.6.4 <- main.parallel(dfs, m)
 timeend2 <- Sys.time()
@@ -122,7 +124,8 @@ means <- colMeans(ee.6.4)
 rslt2 <- c(100, 20, m, 20, means[1], sd(ee.6.4[,1]), 10, means[2], sd(ee.6.4[,2]), 5, means[3], sd(ee.6.4[,3]), run.2)
 
 filename <- "seventh_setting_n100_m200_days20_t5_p0.5_beta20_dose1.rds"
-dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
+#dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
+dfs <- readRDS(filename)
 m=200
 timestart3 <- Sys.time()
 ee.6.4 <- main.parallel(dfs, m)

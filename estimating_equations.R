@@ -406,8 +406,9 @@ ee.cor.1 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   a_5 <- generate_regimes(ncol(a), dose)
   #U <- matrix(0, nrow = ncol(s), ncol = 1)
   U <- 0
+
   for (decision in 1:T.dp) {
-    s.decision <- cbind(1, s[,1])
+    s.decision <- cbind(1, s[,decision])
     df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
     fit <- lm(y ~ -1 + h + a, data = df)
     summary(fit)
@@ -428,6 +429,48 @@ ee.cor.1 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
       U <- U + t(s.decision) %*% (I_at/p_a[,decision] * (y[,decision] - m1) -
                            I_0t/p_a[,decision] * (y[,decision] - m0) +
                            m1 - m0 - ( as.matrix(s.decision) %*% beta )/T.dp)
+    }
+  }
+  U <- U / nrow(y)
+  return(U)
+}
+
+# Improved I_0t calculation by using zeros list
+ee.cor.2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
+  T.dp <- ncol(y)
+  a_5 <- generate_regimes(ncol(a), dose)
+  #U <- matrix(0, nrow = ncol(s), ncol = 1)
+  U <- 0
+  zeros <- list(
+    c(0),
+    c(0,0),
+    c(0,0,0),
+    c(0,0,0,0),
+    c(0,0,0,0,0)
+  )
+
+  for (decision in 1:T.dp) {
+    s.decision <- cbind(1, s[,decision])
+    df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
+    fit <- lm(y ~ -1 + h + a, data = df)
+    #summary(fit)
+
+    df.m0 <- df
+    df.m1 <- df
+
+    for (regime in 1:nrow(a_5)) {
+      df.m1$a <- a_5[regime, decision]
+      df.m0$a <- 0
+
+      m1 <- predict(fit, newdata = df.m1)
+      m0 <- predict(fit, newdata = df.m0)
+
+      I_at <- rowSums(a[, 1:decision, drop=FALSE] == matrix(a_5[regime, 1:decision], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
+      I_0t <- rowSums(a[, 1:decision, drop=FALSE] == matrix(zeros[[decision]], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
+
+      U <- U + t(s.decision) %*% (I_at/p_a[,decision] * (y[,decision] - m1) -
+                                    I_0t/p_a[,decision] * (y[,decision] - m0) +
+                                    m1 - m0 - ( as.matrix(s.decision) %*% beta )/T.dp)
     }
   }
   U <- U / nrow(y)

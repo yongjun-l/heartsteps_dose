@@ -1,0 +1,39 @@
+name: Check whether the files render
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  render-slides:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        file:
+          - slides
+          - report
+
+    container:
+      image: rocker/tidyverse:4.4.0
+
+    steps:
+      # Check out the repository (git clone)
+      - uses: actions/checkout@v4
+
+      # Install dependencies (R packages)
+      - name: Install dependencies
+        run: |
+          install2.r data.table slurmR epiworldR
+    
+      # Render the slides/report using quarto
+      - name: Render ${{ matrix.file }}
+        run: |
+          quarto render ${{ matrix.file }}.qmd --to html
+    
+      # Save the rendered slides/report as an artifact
+      - name: Save as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          path: ${{ matrix.file }}.html
+          name: ${{ matrix.file }}

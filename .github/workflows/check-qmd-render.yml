@@ -2,7 +2,7 @@ name: Check whether the files render
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   render-slides:

@@ -1,1 +1,4 @@
 simulated_data
+.Rproj.user
+*.Rproj
+.DS_Store

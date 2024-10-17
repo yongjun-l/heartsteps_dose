@@ -470,11 +470,6 @@ E[Y(dose)-Y(0)\mid S] = S^\top \beta
 </section>
 <section id="improvement-1---vectorization-1" class="slide level2">
 <h2>Improvement 1 - Vectorization</h2>
-<div class="sourceCode" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href=""></a>I_at <span class="ot">&lt;-</span> <span class="fu">apply</span>(a[, <span class="dv">1</span><span class="sc">:</span>decision, <span class="at">drop=</span><span class="cn">FALSE</span>], <span class="dv">1</span>, <span class="cf">function</span>(x) <span class="fu">all</span>(x <span class="sc">==</span> a_5[regime,<span class="dv">1</span><span class="sc">:</span>decision]))</span>
-<span id="cb3-2"><a href=""></a>I_0t <span class="ot">&lt;-</span> <span class="fu">apply</span>(a[, <span class="dv">1</span><span class="sc">:</span>decision, <span class="at">drop=</span><span class="cn">FALSE</span>], <span class="dv">1</span>, <span class="cf">function</span>(x) <span class="fu">all</span>(x <span class="sc">==</span> <span class="fu">rep</span>(<span class="dv">0</span>, decision)))</span>
-<span id="cb3-3"><a href=""></a></span>
-<span id="cb3-4"><a href=""></a>I_at <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(a[, <span class="dv">1</span><span class="sc">:</span>decision, <span class="at">drop=</span><span class="cn">FALSE</span>] <span class="sc">==</span> <span class="fu">matrix</span>(a_5[regime, <span class="dv">1</span><span class="sc">:</span>decision], <span class="at">nrow=</span><span class="fu">nrow</span>(a), <span class="at">ncol=</span>decision, <span class="at">byrow=</span><span class="cn">TRUE</span>)) <span class="sc">==</span> decision</span>
-<span id="cb3-5"><a href=""></a>I_0t <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(a[, <span class="dv">1</span><span class="sc">:</span>decision, <span class="at">drop=</span><span class="cn">FALSE</span>] <span class="sc">==</span> <span class="fu">matrix</span>(zeros[[decision]], <span class="at">nrow=</span><span class="fu">nrow</span>(a), <span class="at">ncol=</span>decision, <span class="at">byrow=</span><span class="cn">TRUE</span>)) <span class="sc">==</span> decision</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell">
 <div class="cell-output-display">
 <table class="table table-striped caption-top" data-quarto-postprocess="true" style="width: auto !important; margin-left: auto; margin-right: auto;">
@@ -491,19 +486,19 @@ E[Y(dose)-Y(0)\mid S] = S^\top \beta
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">Original</td>
-<td style="text-align: right;">2.983569</td>
-<td style="text-align: right;">2.576777</td>
+<td style="text-align: right;">2.924473</td>
+<td style="text-align: right;">2.617295</td>
 <td style="text-align: right;">1.000000</td>
 <td style="text-align: right;">10</td>
-<td style="text-align: right;">528ms</td>
+<td style="text-align: right;">517ms</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">Improved</td>
 <td style="text-align: right;">1.000000</td>
 <td style="text-align: right;">1.000000</td>
-<td style="text-align: right;">2.305085</td>
-<td style="text-align: right;">24</td>
-<td style="text-align: right;">549ms</td>
+<td style="text-align: right;">2.772446</td>
+<td style="text-align: right;">27</td>
+<td style="text-align: right;">504ms</td>
 </tr>
 </tbody>
 </table>
@@ -511,9 +506,50 @@ E[Y(dose)-Y(0)\mid S] = S^\top \beta
 
 </div>
 </div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href=""></a>I_at <span class="ot">&lt;-</span> <span class="fu">apply</span>(a[, <span class="dv">1</span><span class="sc">:</span>decision, <span class="at">drop=</span><span class="cn">FALSE</span>], <span class="dv">1</span>, <span class="cf">function</span>(x) <span class="fu">all</span>(x <span class="sc">==</span> a_5[regime,<span class="dv">1</span><span class="sc">:</span>decision]))</span>
+<span id="cb3-2"><a href=""></a>I_0t <span class="ot">&lt;-</span> <span class="fu">apply</span>(a[, <span class="dv">1</span><span class="sc">:</span>decision, <span class="at">drop=</span><span class="cn">FALSE</span>], <span class="dv">1</span>, <span class="cf">function</span>(x) <span class="fu">all</span>(x <span class="sc">==</span> <span class="fu">rep</span>(<span class="dv">0</span>, decision)))</span>
+<span id="cb3-3"><a href=""></a></span>
+<span id="cb3-4"><a href=""></a>I_at <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(a[, <span class="dv">1</span><span class="sc">:</span>decision, <span class="at">drop=</span><span class="cn">FALSE</span>] <span class="sc">==</span> <span class="fu">matrix</span>(a_5[regime, <span class="dv">1</span><span class="sc">:</span>decision], <span class="at">nrow=</span><span class="fu">nrow</span>(a), <span class="at">ncol=</span>decision, <span class="at">byrow=</span><span class="cn">TRUE</span>)) <span class="sc">==</span> decision</span>
+<span id="cb3-5"><a href=""></a>I_0t <span class="ot">&lt;-</span> <span class="fu">rowSums</span>(a[, <span class="dv">1</span><span class="sc">:</span>decision, <span class="at">drop=</span><span class="cn">FALSE</span>] <span class="sc">==</span> <span class="fu">matrix</span>(zeros[[decision]], <span class="at">nrow=</span><span class="fu">nrow</span>(a), <span class="at">ncol=</span>decision, <span class="at">byrow=</span><span class="cn">TRUE</span>)) <span class="sc">==</span> decision</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="improvement-2---parallel-computing" class="slide level2">
 <h2>Improvement 2 - Parallel Computing</h2>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-striped caption-top" data-quarto-postprocess="true" style="width: auto !important; margin-left: auto; margin-right: auto;">
+<thead>
+<tr class="header">
+<th style="text-align: left;" data-quarto-table-cell-role="th">func</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">min</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">median</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">itr/sec</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">n_itr</th>
+<th style="text-align: right;" data-quarto-table-cell-role="th">total_time</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Original</td>
+<td style="text-align: right;">2.867379</td>
+<td style="text-align: right;">2.867379</td>
+<td style="text-align: right;">1.000000</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.99s</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Improved</td>
+<td style="text-align: right;">1.000000</td>
+<td style="text-align: right;">1.000000</td>
+<td style="text-align: right;">2.867379</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">694ms</td>
+</tr>
+</tbody>
+</table>
+
+
+</div>
+</div>
 <div class="sourceCode" id="cb4"><pre class="sourceCode numberSource r number-lines code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href=""></a><span class="fu">library</span>(parallel)</span>
 <span id="cb4-2"><a href=""></a>main.parallel <span class="ot">&lt;-</span><span class="cf">function</span>(dfs, <span class="at">m=</span><span class="dv">100</span>) {</span>
 <span id="cb4-3"><a href=""></a>  rslt.parallel <span class="ot">&lt;-</span> <span class="fu">mclapply</span>(<span class="dv">1</span><span class="sc">:</span>m, <span class="cf">function</span>(rep) {</span>
@@ -537,46 +573,11 @@ E[Y(dose)-Y(0)\mid S] = S^\top \beta
 <span id="cb4-21"><a href=""></a>  ee.<span class="fl">6.4</span> <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, rslt.parallel)</span>
 <span id="cb4-22"><a href=""></a>  <span class="fu">return</span>(ee.<span class="fl">6.4</span>)</span>
 <span id="cb4-23"><a href=""></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell">
-<div class="cell-output-display">
-<table class="table table-striped caption-top" data-quarto-postprocess="true" style="width: auto !important; margin-left: auto; margin-right: auto;">
-<thead>
-<tr class="header">
-<th style="text-align: left;" data-quarto-table-cell-role="th">func</th>
-<th style="text-align: right;" data-quarto-table-cell-role="th">min</th>
-<th style="text-align: right;" data-quarto-table-cell-role="th">median</th>
-<th style="text-align: right;" data-quarto-table-cell-role="th">itr/sec</th>
-<th style="text-align: right;" data-quarto-table-cell-role="th">n_itr</th>
-<th style="text-align: right;" data-quarto-table-cell-role="th">total_time</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td style="text-align: left;">Original</td>
-<td style="text-align: right;">2.892523</td>
-<td style="text-align: right;">2.892523</td>
-<td style="text-align: right;">1.000000</td>
-<td style="text-align: right;">1</td>
-<td style="text-align: right;">2.02s</td>
-</tr>
-<tr class="even">
-<td style="text-align: left;">Improved</td>
-<td style="text-align: right;">1.000000</td>
-<td style="text-align: right;">1.000000</td>
-<td style="text-align: right;">2.892523</td>
-<td style="text-align: right;">1</td>
-<td style="text-align: right;">697.91ms</td>
-</tr>
-</tbody>
-</table>
-
-
-</div>
-</div>
 </section>
 <section id="simulations" class="slide level2">
 <h2>Simulations</h2>
-<div class="cell">
+
+<img data-src="./sim_setting.png" class="r-stretch"><div class="cell">
 <div class="cell-output-display">
 <table class="table table-striped caption-top" data-quarto-postprocess="true" style="width: auto !important; margin-left: auto; margin-right: auto;">
 <thead>
@@ -612,7 +613,7 @@ E[Y(dose)-Y(0)\mid S] = S^\top \beta
 <td style="text-align: right;">5</td>
 <td style="text-align: right;">5.563037</td>
 <td style="text-align: right;">6.476287</td>
-<td style="text-align: right;">4.401414</td>
+<td style="text-align: right;">4.562509</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">rslt2</td>
@@ -628,7 +629,7 @@ E[Y(dose)-Y(0)\mid S] = S^\top \beta
 <td style="text-align: right;">5</td>
 <td style="text-align: right;">5.133483</td>
 <td style="text-align: right;">3.210185</td>
-<td style="text-align: right;">8.876864</td>
+<td style="text-align: right;">7.576323</td>
 </tr>
 <tr class="odd">
 <td style="text-align: left;">rslt3</td>
@@ -644,7 +645,7 @@ E[Y(dose)-Y(0)\mid S] = S^\top \beta
 <td style="text-align: right;">5</td>
 <td style="text-align: right;">4.825215</td>
 <td style="text-align: right;">3.062225</td>
-<td style="text-align: right;">16.758421</td>
+<td style="text-align: right;">14.885512</td>
 </tr>
 </tbody>
 </table>

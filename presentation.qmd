@@ -6,7 +6,6 @@ editor: visual
 ---
 
 ## Introduction
-
 -   mHealth and microrandomized trial
 
 -   Causal excursion effect
@@ -70,14 +69,6 @@ I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decisi
 
 ## Improvement 1 - Vectorization
 
-``` r
-I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
-I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
-
-I_at <- rowSums(a[, 1:decision, drop=FALSE] == matrix(a_5[regime, 1:decision], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
-I_0t <- rowSums(a[, 1:decision, drop=FALSE] == matrix(zeros[[decision]], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
-```
-
 ```{r}
 source("main.R")
 filename <- "seventh_setting_n50_m1000_days10_t5_p0.5_beta20_dose1.rds"
@@ -94,9 +85,9 @@ setting = 7
 #debugonce(main)
 # main(m, setting, dfs)
 # 
-# profvis::profvis({
-#   main(m, setting, dfs)
-# })
+profvis::profvis({
+  main(m, setting, dfs)
+})
 # benchmark ee.cor.1, and ee.cor.2
 data <- dfs[[1]]$df
 y <- data[,c("Y1", "Y2", "Y3", "Y4", "Y5")]
@@ -119,7 +110,25 @@ library(kableExtra)
 kable(cbind(func=c("Original", "Improved"), bench[,c("min","median","itr/sec","n_itr","total_time")])) %>%
   kable_styling("striped", full_width = F)
 ```
+``` r
+I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
+I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
+
+I_at <- rowSums(a[, 1:decision, drop=FALSE] == matrix(a_5[regime, 1:decision], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
+I_0t <- rowSums(a[, 1:decision, drop=FALSE] == matrix(zeros[[decision]], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
+```
+
 ## Improvement 2 - Parallel Computing
+```{r}
+source("compare_parallel.R")
+bench_parallel <- bench::mark(
+  main.linear(dfs, m=15),
+  main.parallel(dfs, m=15), relative = TRUE, memory=FALSE
+)
+
+kable(cbind(func=c("Original", "Improved"), bench_parallel[,c("min","median","itr/sec","n_itr","total_time")])) %>%
+  kable_styling("striped", full_width = F)
+```
 ```r
 library(parallel)
 main.parallel <-function(dfs, m=100) {
@@ -145,18 +154,9 @@ main.parallel <-function(dfs, m=100) {
   return(ee.6.4)
 }
 ```
-```{r}
-source("compare_parallel.R")
-bench_parallel <- bench::mark(
-  main.linear(dfs, m=15),
-  main.parallel(dfs, m=15), relative = TRUE, memory=FALSE
-)
-
-kable(cbind(func=c("Original", "Improved"), bench_parallel[,c("min","median","itr/sec","n_itr","total_time")])) %>%
-  kable_styling("striped", full_width = F)
-```
 
 ## Simulations
+![](/sim_setting.png)
 ```{r}
 filename <- "seventh_setting_n50_m1000_days10_t5_p0.5_beta20_dose1.rds"
 dfs <- readRDS(paste("simulated_data",filename, sep = "/"))

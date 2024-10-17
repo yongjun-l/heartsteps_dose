@@ -1,10 +1,12 @@
 # parameters ----
 p = 0.5
 n = 100
+days = 20
+m = 200
 t = 5
 dose = 1
-m = 1000
-days = 20
+
+
 
 a <- matrix(nrow=n*days, ncol = t)
 cum_d <- matrix(0, nrow = n*days, ncol = t)

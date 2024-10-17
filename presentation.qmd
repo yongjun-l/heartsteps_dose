@@ -25,4 +25,6 @@ $some math formula here$
 
 -   Parallelized Bootstrapping
 
-## Bottleneck
+## Vectorization
+
+-   I_ats

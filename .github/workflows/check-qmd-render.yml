@@ -24,7 +24,7 @@ jobs:
       # Install dependencies (R packages)
       - name: Install dependencies
         run: |
-          install2.r nleqslv
+          install2.r nleqslv bench kableExtra rootSolve
     
       # Render the slides/report using quarto
       - name: Render ${{ matrix.file }}

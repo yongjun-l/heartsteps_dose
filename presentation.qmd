@@ -167,35 +167,35 @@ main.parallel <-function(dfs, m=100) {
 filename <- "seventh_setting_n50_m100_days10_t5_p0.5_beta20_dose1.rds"
 #dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
 dfs <- readRDS(filename)
-timestart <- Sys.time()
 m=100
-ee.6.4 <- main.parallel(dfs, m)
+timestart <- Sys.time()
+ee.6.4.rslt <- main.parallel(dfs, m)
 timeend <- Sys.time()
 run.1 <- timeend - timestart
-means <- colMeans(ee.6.4)
-rslt1 <- c(50, 10, m, 20, means[1], sd(ee.6.4[,1]), 10, means[2], sd(ee.6.4[,2]), 5, means[3], sd(ee.6.4[,3]), run.1)
+means <- colMeans(ee.6.4.rslt, na.rm = TRUE)
+rslt1 <- c(50, 10, m, 20, means[1], sd(ee.6.4.rslt[,1]), 10, means[2], sd(ee.6.4.rslt[,2]), 5, means[3], sd(ee.6.4.rslt[,3]), run.1)
 
 filename <- "seventh_setting_n100_m100_days20_t5_p0.5_beta20_dose1.rds"
 #dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
 dfs <- readRDS(filename)
 m=100
 timestart2 <- Sys.time()
-ee.6.4 <- main.parallel(dfs, m)
+ee.6.4.rslt <- main.parallel(dfs, m)
 timeend2 <- Sys.time()
 run.2 <- timeend2 - timestart2
-means <- colMeans(ee.6.4)
-rslt2 <- c(100, 20, m, 20, means[1], sd(ee.6.4[,1]), 10, means[2], sd(ee.6.4[,2]), 5, means[3], sd(ee.6.4[,3]), run.2)
+means <- colMeans(ee.6.4.rslt, na.rm = TRUE)
+rslt2 <- c(100, 20, m, 20, means[1], sd(ee.6.4.rslt[,1]), 10, means[2], sd(ee.6.4.rslt[,2]), 5, means[3], sd(ee.6.4.rslt[,3]), run.2)
 
-filename <- "seventh_setting_n100_m100_days20_t5_p0.5_beta20_dose1.rds"
+filename <- "seventh_setting_n100_m200_days20_t5_p0.5_beta20_dose1.rds"
 #dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
 dfs <- readRDS(filename)
 m=200
 timestart3 <- Sys.time()
-ee.6.4 <- main.parallel(dfs, m)
+ee.6.4.rslt <- main.parallel(dfs, m)
 timeend3 <- Sys.time()
 run.3 <- timeend3 - timestart3
-means <- colMeans(ee.6.4)
-rslt3 <- c(100, 20, m, 20, means[1], sd(ee.6.4[,1]), 10, means[2], sd(ee.6.4[,2]), 5, means[3], sd(ee.6.4[,3]), run.3)
+means <- colMeans(ee.6.4.rslt, na.rm = TRUE)
+rslt3 <- c(100, 20, m, 20, means[1], sd(ee.6.4.rslt[,1]), 10, means[2], sd(ee.6.4.rslt[,2]), 5, means[3], sd(ee.6.4.rslt[,3]), run.3)
 
 rslt <- rbind(rslt1, rslt2, rslt3)
 colnames(rslt) <- c("n", "days", "m", "beta1", "hat1", "sd1", "beta2","hat2", "sd2", "beta3", "hat3", "sd3", "runtime")

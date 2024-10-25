@@ -13,7 +13,7 @@ create_corr_matrix <- function(n) {
 
 # data generation ----
 Time = 30
-n = 200
+n = 300
 m = 100
 theta1 = 0.8
 theta2 = 0.5
@@ -41,9 +41,10 @@ for (beta11 in c(0.2)) {
 
     for (i in 1:n) {
       #i=1
+      S[i,] <- rep((runif(6)>0.5), each=5)
       for (t in 1:Time) {
         #t=1
-        S[i, t] <- sample(c(-1, 1), size = 1, prob = c(0.5, 0.5))
+        #S[i, t] <- sample(c(-1, 1), size = 1, prob = c(0.5, 0.5))
         A[i, t] <- rbinom(1, 1, p)
         if (t == 1) {
           A[i, t] <- A0
@@ -86,5 +87,5 @@ for (beta11 in c(0.2)) {
 
   script_dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
   filename <- paste("corr_setting_1","_n",n,"_m",m,"_t",t,"_beta", beta11,"_theta2",theta2,".rds", sep = "")
-  saveRDS(dfs, paste(script_dir, "simulated_data/correlation",filename, sep = "/"))
+  saveRDS(dfs, paste(script_dir, "simulated_data_original/correlation",filename, sep = "/"))
 }

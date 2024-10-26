@@ -14,12 +14,14 @@ create_corr_matrix <- function(n) {
 # data generation ----
 Time = 30
 n = 300
-m = 100
-theta1 = 0.8
-theta2 = 0.5
-eta = 0.5
+m = 400
+#theta1 = 1
+theta1 = 0
+#theta2 = 0.5
+theta2 = 0.8
+eta = 1
 xi = 0
-beta10 = -0.2
+beta10 = 0.5
 beta11 = 0.2
 A0 = 0
 p=0.5
@@ -54,6 +56,7 @@ for (beta11 in c(0.2)) {
         }
       }
       eps <- mvrnorm(n=1, mu=rep(0, Time), Sigma=create_corr_matrix(Time))
+      #eps <- rnorm(Time)
       Y[i,] <- Y[i,] + c(eps)
     }
     mean(rowMeans(S))
@@ -86,6 +89,6 @@ for (beta11 in c(0.2)) {
   }
 
   script_dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
-  filename <- paste("corr_setting_1","_n",n,"_m",m,"_t",t,"_beta", beta11,"_theta2",theta2,".rds", sep = "")
+  filename <- paste("corr_setting_5","_n",n,"_m",m,"_t",t,"_beta", beta11,"_theta2",theta2,".rds", sep = "")
   saveRDS(dfs, paste(script_dir, "simulated_data_original/correlation",filename, sep = "/"))
 }

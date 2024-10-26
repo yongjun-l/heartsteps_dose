@@ -1,95 +1,27 @@
-source("estimating_equations.R")
-library(nleqslv)
-
-
-# Simulated data ----
-# get current script directory
-
-#script_dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
-script_dir <- getwd()
-
-#
-# # first setting
-# filename <- "first_setting.rds"
-#
-# # second setting beta = (100, 20, 0) eta = (50, 0, 0)
-# filename <- "second_setting_n150_m1000_t5_p0.5_dose1.rds"
-# filename <- "second_setting_n500_m1000_t5_p0.5_dose1.rds"
-#
-# # fourth setting
-# filename <- "fourth_setting_n100_m1000_t5_p0.5_beta20_dose1.rds"
-# filename <- "fourth_setting_n300_m1000_t5_p0.5_beta20_dose1.rds"
-#
-# # fifth setting - check robustness with misspecification
-# filename <- "fifth_setting_n100_m1000_t5_p0.5_beta20_dose1.rds"
-# filename <- "fifth_setting_n500_m1000_t5_p0.5_beta20_dose1.rds"
-# filename <- "fifth_setting_n300_m1000_t5_p0.5_beta20_dose1.rds"
-#
-# # sitxh setting - check robustness with misspecification and non null S
-# filename <- "sixth_setting_n100_m1000_t5_p0.5_beta20_dose1.rds"
-# filename <- "sixth_setting_n300_m1000_t5_p0.5_beta20_dose1.rds"
-#
-# # seventh setting - extend sixth setting to multiple days
-# filename <- "seventh_setting_n100_m1000_days10_t5_p0.5_beta20_dose1.rds"
-# filename <- "seventh_setting_n300_m1000_days10_t5_p0.5_beta20_dose1.rds"
-# filename <- "seventh_setting_n50_m1000_days10_t5_p0.5_beta20_dose1.rds"
-# # correlation setting 1
-# #filename <- "corr_setting_1_n100_m500_t30_beta0.2.rds"
-#
-# dfs <- readRDS(paste(script_dir, "simulated_data",filename, sep = "/"))
-# # dfs <- readRDS("~/Library/CloudStorage/GoogleDrive-yongjun.lee5@gmail.com/My Drive/1. UCI/2024-1 Winter/Tianchen_excursion/simulations/working scripts/simulated_data/correlation/corr_setting_1_n100_m100_t30_beta0.2_theta20.rds")
-# # dfs <- readRDS("~/Library/CloudStorage/GoogleDrive-yongjun.lee5@gmail.com/My Drive/1. UCI/2024-1 Winter/Tianchen_excursion/simulations/working scripts/simulated_data/correlation/corr_setting_1_n200_m100_t30_beta0.2_theta20.rds")
-# # dfs <- readRDS("~/Library/CloudStorage/GoogleDrive-yongjun.lee5@gmail.com/My Drive/1. UCI/2024-1 Winter/Tianchen_excursion/simulations/working scripts/simulated_data/correlation/corr_setting_1_n100_m100_t30_beta0.2_theta20.5.rds")
-# # dfs <- readRDS("~/Library/CloudStorage/GoogleDrive-yongjun.lee5@gmail.com/My Drive/1. UCI/2024-1 Winter/Tianchen_excursion/simulations/working scripts/simulated_data/correlation/corr_setting_1_n200_m100_t30_beta0.2_theta20.5.rds")
-# m <- length(dfs)
-# #dfs[[1]]$params
-# dose=1
-#
-# # result place holders
-# ee.1 <- rep(0, m)
-#
-# ee.2 <- matrix(nrow = m, ncol = 3)
-#
-# ee.4.1 <- rep(0, m)
-# ee.4.2 <- rep(0, m)
-# ee.4.3 <- rep(0, m)
-# ee.4.4 <- rep(0, m)
-#
-# ee.5.1 <- rep(0, m)
-# ee.5.2 <- rep(0, m)
-# ee.5.3 <- rep(0, m)
-# ee.5.4 <- rep(0, m)
-#
-# ee.6.4 <- matrix(nrow = m, ncol = 3)
-# ee.6.4.improved <- matrix(nrow = m, ncol = 3)
-#
-# ee.corr <- matrix(nrow = m, ncol = 2)
-#
-# # ee.boruvka <- rep(0, m)
-#
-
-main <-function(m=100, setting=7, dfs=dfs) {
+rm(list = ls())
+main <-function(m=100, setting=8, dfs=dfs) {
+  ee.corr <- matrix(nrow = m, ncol = 2)
   for (rep in 1:m) {
     #rep = 1
-    # if (rep %% 10 == 0) {
-    #   cat(rep, "\n")
-    # }
+    if (rep %% 10 == 0) {
+      cat(rep, "\n")
+    }
     data <- dfs[[rep]]$df
     #dfs[[1]]$params
 
     # Non correlated
-    y <- data[,c("Y1", "Y2", "Y3", "Y4", "Y5")]
-    a <- data[,c("a1", "a2", "a3", "a4", "a5")]
-    h <- data[,c("h1", "h2", "h3")]
-    s <- data[,c("s1", "s2", "s3")]
-    p <- 0.5
+    # y <- data[,c("Y1", "Y2", "Y3", "Y4", "Y5")]
+    # a <- data[,c("a1", "a2", "a3", "a4", "a5")]
+    # h <- data[,c("h1", "h2", "h3")]
+    # s <- data[,c("s1", "s2", "s3")]
+    # p <- 0.5
 
     # Correlated
-    # y <- data$Y
-    # a <- data$A
-    # h <- data$H
-    # s <- data$S
-    # p <- 0.5
+    y <- data$Y
+    a <- data$A
+    h <- data$H
+    s <- data$S
+    p <- 0.5
 
     matrix <- get_p_a(a, p)
     cum_d <- matrix$cum_d
@@ -217,17 +149,103 @@ main <-function(m=100, setting=7, dfs=dfs) {
       #   ee.cor.1( init_beta, y, a, h, s, p_a, cum_d, dose )
       # })
       #
-      profvis::profvis({
-        nleqslv(init_beta, function(beta) ee.cor.2( beta, y, a, h, s, p_a, cum_d, dose ))
-      })
+      # profvis::profvis({
+      #   nleqslv(init_beta, function(beta) ee.cor.2( beta, y, a, h, s, p_a, cum_d, dose ))
+      #})
+
     }
   }
+  return(ee.corr)
 }
+
+
+source("estimating_equations.R")
+library(nleqslv)
+
+
+# Simulated data ----
+# get current script directory
+
+#script_dir <- dirname(rstudioapi::getActiveDocumentContext()$path)
+script_dir <- getwd()
+
+
+# # first setting
+# filename <- "first_setting.rds"
 #
-# m=1
-# setting = 7
-# #debugonce(main)
-# main(m, setting, dfs)
+# # second setting beta = (100, 20, 0) eta = (50, 0, 0)
+# filename <- "second_setting_n150_m1000_t5_p0.5_dose1.rds"
+# filename <- "second_setting_n500_m1000_t5_p0.5_dose1.rds"
+#
+# # fourth setting
+# filename <- "fourth_setting_n100_m1000_t5_p0.5_beta20_dose1.rds"
+# filename <- "fourth_setting_n300_m1000_t5_p0.5_beta20_dose1.rds"
+#
+# # fifth setting - check robustness with misspecification
+# filename <- "fifth_setting_n100_m1000_t5_p0.5_beta20_dose1.rds"
+# filename <- "fifth_setting_n500_m1000_t5_p0.5_beta20_dose1.rds"
+# filename <- "fifth_setting_n300_m1000_t5_p0.5_beta20_dose1.rds"
+#
+# # sitxh setting - check robustness with misspecification and non null S
+# filename <- "sixth_setting_n100_m1000_t5_p0.5_beta20_dose1.rds"
+# filename <- "sixth_setting_n300_m1000_t5_p0.5_beta20_dose1.rds"
+#
+# # seventh setting - extend sixth setting to multiple days
+# filename <- "seventh_setting_n100_m1000_days10_t5_p0.5_beta20_dose1.rds"
+# filename <- "seventh_setting_n300_m1000_days10_t5_p0.5_beta20_dose1.rds"
+# filename <- "seventh_setting_n50_m1000_days10_t5_p0.5_beta20_dose1.rds"
+
+# eighth setting - correlation setting 1
+filename <- "corr_setting_1_n100_m100_t30_beta0.2_theta20.5.rds"
+filename <- "corr_setting_1_n200_m100_t30_beta0.2_theta20.5.rds"
+filename <- "corr_setting_1_n300_m100_t30_beta0.2_theta20.5.rds"
+filename <- "corr_setting_1_n300_m100_t30_beta0.2_theta20.rds"
+filename <- "corr_setting_2_n300_m400_t30_beta0.2_theta20.rds"
+filename <- "corr_setting_2_n300_m400_t30_beta0.2_theta20.5.rds"
+filename <- "corr_setting_2_n300_m400_t30_beta0.2_theta20.8.rds"
+filename <- "corr_setting_3_n300_m400_t30_beta0.2_theta20.8.rds"
+filename <- "corr_setting_4_n300_m400_t30_beta0.2_theta20.8.rds"
+filename <- "corr_setting_5_n300_m400_t30_beta0.2_theta20.8.rds"
+
+#dfs <- readRDS(paste(script_dir, "simulated_data",filename, sep = "/"))
+dfs <- readRDS(paste(script_dir, "simulated_data_original/correlation",filename, sep = "/"))
+
+m <- length(dfs)
+#dfs[[1]]$params
+dose=1
+
+# result place holders
+# ee.1 <- rep(0, m)
+#
+# ee.2 <- matrix(nrow = m, ncol = 3)
+#
+# ee.4.1 <- rep(0, m)
+# ee.4.2 <- rep(0, m)
+# ee.4.3 <- rep(0, m)
+# ee.4.4 <- rep(0, m)
+#
+# ee.5.1 <- rep(0, m)
+# ee.5.2 <- rep(0, m)
+# ee.5.3 <- rep(0, m)
+# ee.5.4 <- rep(0, m)
+#
+# ee.6.4 <- matrix(nrow = m, ncol = 3)
+# ee.6.4.improved <- matrix(nrow = m, ncol = 3)
+
+ee.corr <- matrix(nrow = m, ncol = 2)
+
+# ee.boruvka <- rep(0, m)
+setting = 8
+#debugonce(main)
+ee.corr <- main(m, setting, dfs)
+
+cat("\n\n")
+colMeans(ee.corr, na.rm = TRUE)
+apply(ee.corr, 2, median, na.rm = TRUE)
+apply(ee.corr, 2, sd, na.rm = TRUE)
+
+hist(ee.corr[,2])
+
 #
 # profvis::profvis({
 #   main(m, setting, dfs)
@@ -319,10 +337,7 @@ main <-function(m=100, setting=7, dfs=dfs) {
 # apply(ee.2, 2, median, na.rm = TRUE)
 # apply(ee.2, 2, sd, na.rm = TRUE)
 #
-# cat("\n\n")
-# colMeans(ee.corr.1, na.rm = TRUE)
-# apply(ee.corr.1, 2, median, na.rm = TRUE)
-# apply(ee.corr.1, 2, sd, na.rm = TRUE)
+
 #
 #
 #

@@ -399,16 +399,12 @@ ee6.4.improved <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   #U <- matrix(0, nrow = ncol(s), ncol = 1)
   U <- 0
 
-  zeros <- list(
-    c(0),
-    c(0,0),
-    c(0,0,0),
-    c(0,0,0,0),
-    c(0,0,0,0,0)
-  )
+  zeros <- lapply(1:5, rep, x = 0)
 
   for (decision in 1:T.dp) {
     df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
+
+    # Fit is too slow
     fit <- lm(y ~ -1 + h1 + h2 + a, data = df)
     summary(fit)
 
@@ -489,17 +485,12 @@ ee.cor.2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   a_5 <- generate_regimes(ncol(a), dose)
   #U <- matrix(0, nrow = ncol(s), ncol = 1)
   U <- 0
-  zeros <- list(
-    c(0),
-    c(0,0),
-    c(0,0,0),
-    c(0,0,0,0),
-    c(0,0,0,0,0)
-  )
+  zeros <- lapply(1:5, rep, x = 0)
 
   for (decision in 1:T.dp) {
     s.decision <- cbind(1, s[,decision])
     df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
+    # Fit is slow
     fit <- lm(y ~  h + a + s*a, data = df)
     #summary(fit)
 

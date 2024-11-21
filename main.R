@@ -1,5 +1,11 @@
 rm(list = ls())
+<<<<<<< HEAD
 library(nleqslv)
+=======
+# Do you do Python?
+# Also, programs this long should be split into stages.
+# Functions with more than ~50 lines of code I think are too long.
+>>>>>>> 8d9f17ceb8f67f39d7b51c365f2c0378b29ca4b6
 main <-function(m=100, setting=8, dfs=dfs) {
   ee.corr <- matrix(nrow = m, ncol = 2)
   for (rep in 1:m) {
@@ -196,6 +202,8 @@ script_dir <- getwd()
 # filename <- "seventh_setting_n300_m1000_days10_t5_p0.5_beta20_dose1.rds"
 # filename <- "seventh_setting_n50_m1000_days10_t5_p0.5_beta20_dose1.rds"
 
+# Lines like this could probably be optimized for clarity,
+# i.e, a for-loop iterating through the various combinations.
 # eighth setting - correlation setting 1
 filename <- "corr_setting_1_n100_m100_t30_beta0.2_theta20.5.rds"
 filename <- "corr_setting_1_n200_m100_t30_beta0.2_theta20.5.rds"
@@ -268,7 +276,7 @@ hist(ee.corr[,2])
 #   ee6.4.improved( c(0,0,0), y, a, h, s, p_a, cum_d, dose ), relative = TRUE
 # )
 
-
+# So much commented code!!!!
 # truncate extreme values of ee
 # par(mfrow=c(1,2))
 # ee <- ee[abs(ee) < 1000]

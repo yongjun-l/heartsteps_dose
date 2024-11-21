@@ -32,6 +32,8 @@ get_p_a <- function(a, p) {
   return(list(cum_d = cum_d, p_a = p_a, d_w = d_w))
 }
 
+# So much commented code! You can safely delete it if you are using
+# Git!
 # # Estimating Equations ----
 # ## Setting 1: Marginal effect ----
 # ee1 <- function( beta, y, a, h, s, p_a, cum_d, dose ) { # we don't consider any covariates
@@ -357,6 +359,7 @@ get_p_a <- function(a, p) {
 
 
 ## Setting 6: Misspecification w/ S ----
+<<<<<<< HEAD
 # ee6.4 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
 #   T.dp <- ncol(y)
 #   a_5 <- generate_regimes(ncol(a), dose)
@@ -388,23 +391,16 @@ get_p_a <- function(a, p) {
 #   U <- U / nrow(y)
 #   return(U)
 # }
-
-ee6.4.improved <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
+=======
+ee6.4 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   T.dp <- ncol(y)
   a_5 <- generate_regimes(ncol(a), dose)
   #U <- matrix(0, nrow = ncol(s), ncol = 1)
   U <- 0
-
-  zeros <- list(
-    c(0),
-    c(0,0),
-    c(0,0,0),
-    c(0,0,0,0),
-    c(0,0,0,0,0)
-  )
-
   for (decision in 1:T.dp) {
     df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
+    
+    # LM is slower than lm.fit (I think that's the name of the function)
     fit <- lm(y ~ -1 + h1 + h2 + a, data = df)
     summary(fit)
 
@@ -418,6 +414,45 @@ ee6.4.improved <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
       m1 <- predict(fit, newdata = df.m1)
       m0 <- predict(fit, newdata = df.m0)
 
+      I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
+      I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
+
+      U <- U + t(s) %*% (I_at/p_a[,decision] * (y[,decision] - m1) -
+                         I_0t/p_a[,decision] * (y[,decision] - m0) +
+                         m1 - m0 - ( as.matrix(s) %*% beta )/T.dp)
+    }
+  }
+  U <- U / nrow(y)
+  return(U)
+}
+>>>>>>> 8d9f17ceb8f67f39d7b51c365f2c0378b29ca4b6
+
+ee6.4.improved <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
+  T.dp <- ncol(y)
+  a_5 <- generate_regimes(ncol(a), dose)
+  #U <- matrix(0, nrow = ncol(s), ncol = 1)
+  U <- 0
+
+  zeros <- lapply(1:5, rep, x = 0)
+
+  for (decision in 1:T.dp) {
+    df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
+
+    # Fit is too slow
+    fit <- lm(y ~ -1 + h1 + h2 + a, data = df)
+    summary(fit)
+
+    df.m0 <- df
+    df.m1 <- df
+
+    for (regime in 1:nrow(a_5)) {
+      df.m1$a <- a_5[regime, decision]
+      df.m0$a <- 0
+
+      m1 <- predict(fit, newdata = df.m1)
+      m0 <- predict(fit, newdata = df.m0)
+
+      # I mean, even faster here!
       I_at <- rowSums(a[, 1:decision, drop=FALSE] == matrix(a_5[regime, 1:decision], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
       I_0t <- rowSums(a[, 1:decision, drop=FALSE] == matrix(zeros[[decision]], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
 
@@ -482,18 +517,17 @@ ee.cor.2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   a_5 <- generate_regimes(ncol(a), dose)
   #U <- matrix(0, nrow = ncol(s), ncol = 1)
   U <- 0
-  zeros <- list(
-    c(0),
-    c(0,0),
-    c(0,0,0),
-    c(0,0,0,0),
-    c(0,0,0,0,0)
-  )
+  zeros <- lapply(1:5, rep, x = 0)
 
   for (decision in 1:T.dp) {
     s.decision <- cbind(1, s[,decision])
     df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
+<<<<<<< HEAD
     fit <- lm(y ~  h + s + a, data = df)
+=======
+    # Fit is slow
+    fit <- lm(y ~  h + a + s*a, data = df)
+>>>>>>> 8d9f17ceb8f67f39d7b51c365f2c0378b29ca4b6
     #summary(fit)
 
     df.m0 <- df
@@ -506,6 +540,9 @@ ee.cor.2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
       m1 <- predict(fit, newdata = df.m1)
       m0 <- predict(fit, newdata = df.m0)
 
+      # a[, 1:decision, drop=FALSE] is repeated across
+      # for-loops. Any variable that can be moved out of a loop
+      # should be moved out!
       I_at <- rowSums(a[, 1:decision, drop=FALSE] == matrix(a_5[regime, 1:decision], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
       I_0t <- rowSums(a[, 1:decision, drop=FALSE] == matrix(zeros[[decision]], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
 

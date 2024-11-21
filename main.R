@@ -1,4 +1,5 @@
 rm(list = ls())
+library(nleqslv)
 main <-function(m=100, setting=8, dfs=dfs) {
   ee.corr <- matrix(nrow = m, ncol = 2)
   for (rep in 1:m) {
@@ -200,6 +201,7 @@ filename <- "corr_setting_1_n100_m100_t30_beta0.2_theta20.5.rds"
 filename <- "corr_setting_1_n200_m100_t30_beta0.2_theta20.5.rds"
 filename <- "corr_setting_1_n300_m100_t30_beta0.2_theta20.5.rds"
 filename <- "corr_setting_1_n300_m100_t30_beta0.2_theta20.rds"
+
 filename <- "corr_setting_2_n300_m400_t30_beta0.2_theta20.rds"
 filename <- "corr_setting_2_n300_m400_t30_beta0.2_theta20.5.rds"
 filename <- "corr_setting_2_n300_m400_t30_beta0.2_theta20.8.rds"
@@ -211,7 +213,7 @@ filename <- "corr_setting_5_n300_m400_t30_beta0.2_theta20.8.rds"
 dfs <- readRDS(paste(script_dir, "simulated_data_original/correlation",filename, sep = "/"))
 
 m <- length(dfs)
-#dfs[[1]]$params
+dfs[[1]]$params
 dose=1
 
 # result place holders

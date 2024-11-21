@@ -357,37 +357,37 @@ get_p_a <- function(a, p) {
 
 
 ## Setting 6: Misspecification w/ S ----
-ee6.4 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
-  T.dp <- ncol(y)
-  a_5 <- generate_regimes(ncol(a), dose)
-  #U <- matrix(0, nrow = ncol(s), ncol = 1)
-  U <- 0
-  for (decision in 1:T.dp) {
-    df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
-    fit <- lm(y ~ -1 + h1 + h2 + a, data = df)
-    summary(fit)
-
-    df.m0 <- df
-    df.m1 <- df
-
-    for (regime in 1:nrow(a_5)) {
-      df.m1$a <- a_5[regime, decision]
-      df.m0$a <- 0
-
-      m1 <- predict(fit, newdata = df.m1)
-      m0 <- predict(fit, newdata = df.m0)
-
-      I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
-      I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
-
-      U <- U + t(s) %*% (I_at/p_a[,decision] * (y[,decision] - m1) -
-                         I_0t/p_a[,decision] * (y[,decision] - m0) +
-                         m1 - m0 - ( as.matrix(s) %*% beta )/T.dp)
-    }
-  }
-  U <- U / nrow(y)
-  return(U)
-}
+# ee6.4 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
+#   T.dp <- ncol(y)
+#   a_5 <- generate_regimes(ncol(a), dose)
+#   #U <- matrix(0, nrow = ncol(s), ncol = 1)
+#   U <- 0
+#   for (decision in 1:T.dp) {
+#     df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
+#     fit <- lm(y ~ -1 + h1 + h2 + a, data = df)
+#     summary(fit)
+#
+#     df.m0 <- df
+#     df.m1 <- df
+#
+#     for (regime in 1:nrow(a_5)) {
+#       df.m1$a <- a_5[regime, decision]
+#       df.m0$a <- 0
+#
+#       m1 <- predict(fit, newdata = df.m1)
+#       m0 <- predict(fit, newdata = df.m0)
+#
+#       I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
+#       I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
+#
+#       U <- U + t(s) %*% (I_at/p_a[,decision] * (y[,decision] - m1) -
+#                          I_0t/p_a[,decision] * (y[,decision] - m0) +
+#                          m1 - m0 - ( as.matrix(s) %*% beta )/T.dp)
+#     }
+#   }
+#   U <- U / nrow(y)
+#   return(U)
+# }
 
 ee6.4.improved <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   T.dp <- ncol(y)
@@ -410,8 +410,6 @@ ee6.4.improved <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
 
     df.m0 <- df
     df.m1 <- df
-
-
 
     for (regime in 1:nrow(a_5)) {
       df.m1$a <- a_5[regime, decision]
@@ -495,7 +493,7 @@ ee.cor.2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   for (decision in 1:T.dp) {
     s.decision <- cbind(1, s[,decision])
     df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
-    fit <- lm(y ~  h + a + s*a, data = df)
+    fit <- lm(y ~  h + s + a, data = df)
     #summary(fit)
 
     df.m0 <- df

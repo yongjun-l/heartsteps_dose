@@ -1,0 +1,204 @@
+---
+title: "Optimal Dose for mHealth Interventions"
+author: "Yongjun Lee"
+format: revealjs
+editor: visual
+---
+
+## Introduction
+
+-   mHealth and microrandomized trial
+
+-   Causal excursion effect
+
+-   Optimal dose
+
+-   HeartSteps
+
+## Robust Estimating Equation
+
+$$
+E[Y(dose)-Y(0)\mid S] = S^\top \beta
+$$
+
+![Estimating Equation](/ee_pic.png){width="1800px" height="120px"}
+
+``` r
+ee6.4 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
+  T.dp <- ncol(y)
+  a_5 <- generate_regimes(ncol(a), dose)
+  #U <- matrix(0, nrow = ncol(s), ncol = 1)
+  U <- 0
+  for (decision in 1:T.dp) {
+    df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
+    fit <- lm(y ~ -1 + h1 + h2 + a, data = df)
+    summary(fit)
+
+    df.m0 <- df
+    df.m1 <- df
+
+    for (regime in 1:nrow(a_5)) {
+      df.m1$a <- a_5[regime, decision]
+      df.m0$a <- 0
+
+      m1 <- predict(fit, newdata = df.m1)
+      m0 <- predict(fit, newdata = df.m0)
+
+      I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
+      I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
+
+      U <- U + t(s) %*% (I_at/p_a[,decision] * (y[,decision] - m1) -
+                         I_0t/p_a[,decision] * (y[,decision] - m0) +
+                         m1 - m0 - ( as.matrix(s) %*% beta )/T.dp)
+    }
+  }
+  U <- U / nrow(y)
+  return(U)
+}
+```
+
+## Improvement 1 - Vectorization
+
+![Estimating Equation](/profvis1.png)
+
+``` r
+I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
+I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
+```
+
+![](/ee_pic.png){width="1800px" height="120px"}
+
+## Improvement 1 - Vectorization
+
+```{r}
+source("main.R")
+filename <- "seventh_setting_n50_m100_days10_t5_p0.5_beta20_dose1.rds"
+#dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
+dfs <- readRDS(filename)
+m <- length(dfs)
+ee.6.4 <- matrix(nrow = m, ncol = 3)
+ee.6.4.improved <- matrix(nrow = m, ncol = 3)
+
+
+dose=1
+m=1
+setting = 7
+#debugonce(main)
+# main(m, setting, dfs)
+# 
+profvis::profvis({
+  main(m, setting, dfs)
+})
+# benchmark ee.cor.1, and ee.cor.2
+data <- dfs[[1]]$df
+y <- data[,c("Y1", "Y2", "Y3", "Y4", "Y5")]
+a <- data[,c("a1", "a2", "a3", "a4", "a5")]
+h <- data[,c("h1", "h2", "h3")]
+s <- data[,c("s1", "s2", "s3")]
+p <- 0.5
+matrix <- get_p_a(a, p)
+cum_d <- matrix$cum_d
+p_a <- matrix$p_a
+
+bench <- bench::mark(
+  ee6.4( c(0,0,0), y, a, h, s, p_a, cum_d, dose ),
+  ee6.4.improved( c(0,0,0), y, a, h, s, p_a, cum_d, dose ), relative = TRUE
+)
+```
+
+```{r}
+library(kableExtra)
+kable(cbind(func=c("Original", "Improved"), bench[,c("min","median","itr/sec","n_itr","total_time")])) %>%
+  kable_styling("striped", full_width = F)
+```
+
+``` r
+I_at <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == a_5[regime,1:decision]))
+I_0t <- apply(a[, 1:decision, drop=FALSE], 1, function(x) all(x == rep(0, decision)))
+
+I_at <- rowSums(a[, 1:decision, drop=FALSE] == matrix(a_5[regime, 1:decision], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
+I_0t <- rowSums(a[, 1:decision, drop=FALSE] == matrix(zeros[[decision]], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
+```
+
+## Improvement 2 - Parallel Computing
+
+```{r}
+source("compare_parallel.R")
+bench_parallel <- bench::mark(
+  main.linear(dfs, m=15),
+  main.parallel(dfs, m=15), relative = TRUE, memory=FALSE
+)
+
+kable(cbind(func=c("Original", "Improved"), bench_parallel[,c("min","median","itr/sec","n_itr","total_time")])) %>%
+  kable_styling("striped", full_width = F)
+```
+
+``` r
+library(parallel)
+main.parallel <-function(dfs, m=100) {
+  rslt.parallel <- mclapply(1:m, function(rep) {
+    data <- dfs[[rep]]$df
+
+    y <- data[,c("Y1", "Y2", "Y3", "Y4", "Y5")]
+    a <- data[,c("a1", "a2", "a3", "a4", "a5")]
+    h <- data[,c("h1", "h2", "h3")]
+    s <- data[,c("s1", "s2", "s3")]
+    p <- 0.5
+
+    matrix <- get_p_a(a, p)
+    cum_d <- matrix$cum_d
+    p_a <- matrix$p_a
+
+    init_beta <- c(0,0,0)
+    rslt6.4 <- nleqslv(init_beta, function(beta) ee6.4.improved( beta, y, a, h, s, p_a, cum_d, dose ))
+    return(rslt6.4$x)
+  }, mc.cores = 4)
+
+  ee.6.4 <- do.call(rbind, rslt.parallel)
+  return(ee.6.4)
+}
+```
+
+## Simulations
+
+![](/sim_setting.png)
+
+```{r}
+filename <- "seventh_setting_n50_m100_days10_t5_p0.5_beta20_dose1.rds"
+#dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
+dfs <- readRDS(filename)
+m=100
+timestart <- Sys.time()
+ee.6.4.rslt <- main.parallel(dfs, m)
+timeend <- Sys.time()
+run.1 <- timeend - timestart
+means <- colMeans(ee.6.4.rslt, na.rm = TRUE)
+rslt1 <- c(50, 10, m, 20, means[1], sd(ee.6.4.rslt[,1]), 10, means[2], sd(ee.6.4.rslt[,2]), 5, means[3], sd(ee.6.4.rslt[,3]), run.1)
+
+filename <- "seventh_setting_n100_m100_days20_t5_p0.5_beta20_dose1.rds"
+#dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
+dfs <- readRDS(filename)
+m=100
+timestart2 <- Sys.time()
+ee.6.4.rslt <- main.parallel(dfs, m)
+timeend2 <- Sys.time()
+run.2 <- timeend2 - timestart2
+means <- colMeans(ee.6.4.rslt, na.rm = TRUE)
+rslt2 <- c(100, 20, m, 20, means[1], sd(ee.6.4.rslt[,1]), 10, means[2], sd(ee.6.4.rslt[,2]), 5, means[3], sd(ee.6.4.rslt[,3]), run.2)
+
+filename <- "seventh_setting_n100_m200_days20_t5_p0.5_beta20_dose1.rds"
+#dfs <- readRDS(paste("GITHUB_WORKSPACE/simulated_data",filename, sep = "/"))
+dfs <- readRDS(filename)
+m=200
+timestart3 <- Sys.time()
+ee.6.4.rslt <- main.parallel(dfs, m)
+timeend3 <- Sys.time()
+run.3 <- timeend3 - timestart3
+means <- colMeans(ee.6.4.rslt, na.rm = TRUE)
+rslt3 <- c(100, 20, m, 20, means[1], sd(ee.6.4.rslt[,1]), 10, means[2], sd(ee.6.4.rslt[,2]), 5, means[3], sd(ee.6.4.rslt[,3]), run.3)
+
+rslt <- rbind(rslt1, rslt2, rslt3)
+colnames(rslt) <- c("n", "days", "m", "beta1", "hat1", "sd1", "beta2","hat2", "sd2", "beta3", "hat3", "sd3", "runtime")
+kable(rslt) %>%
+  kable_styling("striped", full_width = F)
+```

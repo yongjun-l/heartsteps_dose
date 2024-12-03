@@ -1,10 +1,10 @@
 # Data generation with correlation from boruvka
 library(MASS)
-create_corr_matrix <- function(n) {
+create_corr_matrix <- function(n, rho=0.5) {
   corr_matrix <- matrix(0, n, n)
   for (i in 1:n) {
     for (j in 1:n) {
-      corr_matrix[i, j] <- 0.5^(abs(i - j) / 2)
+      corr_matrix[i, j] <- rho^(abs(i - j) / 2)
     }
   }
   return(corr_matrix)
@@ -12,20 +12,20 @@ create_corr_matrix <- function(n) {
 
 
 # data generation ----
-Time = 30
-n = 300
 m = 400
-#theta1 = 1
-theta1 = 0
-#theta2 = 0.5
+n = 200
+time = 5
+days = 10
+eta = c(1,2)
+rho = 0.5
+theta1 = c(0.5, 0.3)
 theta2 = 0.8
-eta = 1
-xi = 0
 beta10 = 0.5
 beta11 = 0.2
-A0 = 0
+beta12 = 0.3
 p=0.5
 
+A0 = 0
 dfs <- list()
 # for (beta11 in c(0, 0.2, 0.5, 0.8)) {
 #   #beta11=0.2
@@ -35,16 +35,16 @@ for (beta11 in c(0.2)) {
     if (rep %% 10 == 0) {
       cat(rep, "\n")
     }
-    A = matrix(0, nrow=n, ncol=Time)
-    S = matrix(0, nrow=n, ncol=Time)
-    Y = matrix(0, nrow=n, ncol=Time)
+    A = matrix(0, nrow=n, ncol=time)
+    S = matrix(0, nrow=n, ncol=time)
+    Y = matrix(0, nrow=n, ncol=time)
 
     H = rnorm(n, 0, 1)
 
     for (i in 1:n) {
       #i=1
       S[i,] <- rep((runif(6)>0.5), each=5)
-      for (t in 1:Time) {
+      for (t in 1:time) {
         #t=1
         #S[i, t] <- sample(c(-1, 1), size = 1, prob = c(0.5, 0.5))
         A[i, t] <- rbinom(1, 1, p)
@@ -55,8 +55,8 @@ for (beta11 in c(0.2)) {
           Y[i, t] <- eta * H[i] + theta1*S[i,t]  +  theta2*(A[i, t-1])  +  (A[i,t]) * (beta10 + beta11 * S[i, t])
         }
       }
-      eps <- mvrnorm(n=1, mu=rep(0, Time), Sigma=create_corr_matrix(Time))
-      #eps <- rnorm(Time)
+      eps <- mvrnorm(n=1, mu=rep(0, time), Sigma=create_corr_matrix(time))
+      #eps <- rnorm(time)
       Y[i,] <- Y[i,] + c(eps)
     }
     mean(rowMeans(S))

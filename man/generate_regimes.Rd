@@ -2,7 +2,7 @@
 % Please edit documentation in R/estimating_equations.R
 \name{generate_regimes}
 \alias{generate_regimes}
-\title{Title}
+\title{Title generate regimes}
 \usage{
 generate_regimes(time_points, total_doses)
 }
@@ -15,8 +15,5 @@ generate_regimes(time_points, total_doses)
 a matrix of all possible dose combinations
 }
 \description{
-Title
-}
-\examples{
-generate_regimes(5, 2)
+Title generate regimes
 }

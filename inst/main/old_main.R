@@ -1,11 +1,11 @@
 rm(list = ls())
-<<<<<<< HEAD
+
 library(nleqslv)
-=======
+
 # Do you do Python?
 # Also, programs this long should be split into stages.
 # Functions with more than ~50 lines of code I think are too long.
->>>>>>> 8d9f17ceb8f67f39d7b51c365f2c0378b29ca4b6
+
 main <-function(m=100, setting=8, dfs=dfs) {
   ee.corr <- matrix(nrow = m, ncol = 2)
   for (rep in 1:m) {

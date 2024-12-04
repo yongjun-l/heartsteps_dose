@@ -16,7 +16,8 @@ simMhealth(
   beta10,
   beta11,
   beta12,
-  p
+  p,
+  print_progress = FALSE
 )
 }
 \arguments{

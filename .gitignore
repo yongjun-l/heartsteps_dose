@@ -5,3 +5,4 @@ simulated_data_original
 presentation_files
 .RData
 .Rhistory
+inst/doc

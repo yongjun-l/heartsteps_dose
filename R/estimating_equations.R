@@ -38,7 +38,7 @@ get_p_a <- function(a, p) {
   p_a <- matrix(nrow=nrow(a), ncol = ncol(a))
   d_w <- matrix(0, nrow=nrow(a), ncol = ncol(a))
   for (decision in 1:ncol(a)) {
-    cum_d[,decision] <- if(decision==1) {a[,1:decision]} else {rowSums(a[,1:decision])}
+    cum_d[,decision] <- if(decision==1) {as.matrix(a[,1:decision, drop=FALSE])} else {rowSums(a[,1:decision])}
     p_a[, decision] <- (p^cum_d[,decision]) * ((1-p)^(decision - cum_d[,decision]))
     d_w[, decision] <- (cum_d[,decision]==1) * 1/5 + (cum_d[,decision]==0) * (5-decision)/5
   }
@@ -108,9 +108,10 @@ ee.cor.2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
 
   for (decision in 1:T.dp) {
     s.decision <- cbind(1, s[,decision])
-    df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
-    #fit <- lm(y ~  h + s + a, data = df)
-    fit <- lm.fit(y ~  h + a + s*a, data = df) # included intercept
+    df <- data.frame("y"=y[,decision, drop=TRUE], "h"=h, "s"=s[,decision, drop=TRUE], "a"=a[,decision, drop=TRUE], "cum_d"=cum_d[,decision, drop=TRUE])
+    fit <- lm(y ~  h + s + a, data = df)
+    #X<-model.matrix(~h + a + s*a,data = df)
+    #fit <- lm.fit(y =df$y,x=X) # included intercept
 
     df.m0 <- df
     df.m1 <- df
@@ -139,6 +140,56 @@ ee.cor.2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
 }
 
 
+#' Get Simulated Results
+#'
+#' @param m number of simulated datasets
+#' @param dfs list of simulated datasets
+#' @param print_progress print progress if true
+#'
+#' @return matrix with 2 rows: estimated mean, estimated standard deviation
+#' @export
+#'
+#' @examples
+#' df.corr <- simMhealth(m=100, n=37, time=5, days=42,
+#' eta=1, rho=0.5,
+#' theta1=1, theta2=0.8,
+#' beta10=0.5, beta11=0, beta12=0.2,
+#' p=0.5)
+#' rslt <- get.simulated.rslts(m=100, dfs=df.corr, print_progress=TRUE)
+get.sim.rslts <-function(m, dfs, dose, print_progress=FALSE) {
+  ee.corr <- matrix(nrow = m, ncol = 2)
+  for (rep in 1:m) {
+    if ((rep %% 10 == 0) & (print_progress)) {
+      cat(rep, "\n")
+    }
+
+    df.wide <- dfs[[rep]] |>
+      dplyr::select(ID,DAY,SLOT,Y,A,H,S) |>
+      dplyr::group_by(ID,DAY) |>
+      tidyr::pivot_wider(names_from=SLOT, values_from=c(Y,A,S)) |>
+      as.matrix()
+
+    y <- df.wide[,c("Y_1", "Y_2", "Y_3", "Y_4", "Y_5")]
+    a <- df.wide[,c("A_1", "A_2", "A_3", "A_4", "A_5")]
+    h <- df.wide[,"H", drop=FALSE]
+    s <- df.wide[,c("S_1", "S_2", "S_3", "S_4", "S_5")]
+    p <- 0.5
+
+    matrix <- get_p_a(a, p)
+    cum_d <- matrix$cum_d
+    p_a <- matrix$p_a
+
+    init_beta <- c(0,0)
+    ee.cor.2( init_beta, y, a, h, s, p_a, cum_d, dose )
+    rslt <- nleqslv::nleqslv(init_beta, function(beta) ee.cor.2( beta, y, a, h, s, p_a, cum_d, dose ))
+    ee.corr[rep,] <- rslt$x
+  }
+  return(rbind(colMeans(ee.corr), apply(ee.corr, 2, sd)))
+}
+
+
+
+# CeeDose <- function(id, y, trt, baseline, timevar, baselineInter, timevarInter, )
 
 
 

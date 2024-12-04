@@ -39,12 +39,12 @@ gee_ind <- function(param, Y, S, A, rho.hat, w) {
   return(U)
 }
 
-'yt.generate <- function(At_1, At, St_1, St, xi, eta1, eta2, theta1, theta2, beta10, beta11) {
+simulate.boruvka <- function(At_1, At, St_1, St, xi, eta1, eta2, theta1, theta2, beta10, beta11) {
   E.St <- expit(xi * At_1) - (1 - expit(xi * At_1))
   #pt_1 <- expit(eta1 * At_2 + eta2 * St_1)
   pt <- expit(eta1 * At_1 + eta2 * St)
   return(theta1 * ( St - E.St ) +
          #theta2 * ( At_1 - pt_1 ) +
          ( At - pt ) * (beta10 + beta11 * St))
-}'
+}
 

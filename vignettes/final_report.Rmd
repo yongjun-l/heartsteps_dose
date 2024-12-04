@@ -1,0 +1,32 @@
+---
+title: "Package Demo with HeartSteps"
+output: rmarkdown::html_vignette
+vignette: >
+%\VignetteIndexEntry{Package Demo with HeartSteps}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(mrt.dose)
+```
+
+# Simulate some data
+```{r}
+df.corr <- simMhealth(m=100, n=37, time=5, days=42,
+                      eta=1, rho=0.5,
+                      theta1=1, theta2=0.8,
+                      beta10=0.5, beta11=0, beta12=0.2,
+                      p=0.5)
+debugonce(get.sim.rslts)
+rslt <- get.sim.rslts(m=100, dfs=df.corr, dose=1, print_progress=TRUE)
+
+```
+

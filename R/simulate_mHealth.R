@@ -1,6 +1,6 @@
 
 
-#' Title
+#' Create correlation matrix to simulate epsilon
 #'
 #' @param n number of observations (in HeartSteps, number of total randomization points)
 #' @param rho correlation between adjacent observations
@@ -43,18 +43,25 @@ create_corr_matrix <- function(n, rho=0.5) {
 #'   - eps: error term
 #'   - Y: outcome
 #' @export
-simMhealth <- function(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p) {
+simMhealth <- function(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p, print_progress=FALSE) {
   dfs <- list()
   n.h <- length(eta)
   n.s <- length(theta1)
+  n.h.prime <- length(beta11)
+  n.s.prime <- length(beta12)
+
+  if ((n.h < n.h.prime)|(n.s < n.s.prime)) {
+    stop("Interaction variables must be a subset of baseline covariates")
+  }
 
   for (rep in 1:m) {
-    if (rep %% 10 == 0) {
+    if ((rep %% 10 == 0) & (print_progress)) {
       cat(rep, "\n")
     }
 
     ID <- rep(1:n, each=time*days)
     OBS <- rep(1:(time*days), n)
+    DAY <- rep(rep(1:days, each=time), n)
     SLOT <- rep(1:time, n*days)
     H <- matrix(rep(rnorm(n*n.h, 0, 1), each=time*days), ncol=n.h) # baseline covariate. same for each person
     S <- matrix(rep((runif(n*days*n.s)>0.5), each=time), ncol=n.s) # time-varying covariate. differs for each day
@@ -62,13 +69,15 @@ simMhealth <- function(m, n, time, days, eta, rho, theta1, theta2, beta10, beta1
     A <- matrix(runif(n*days*time)>p)
     A.prev <- c(0, (rep(c(rep(1, (time*days)-1),0),n)*A)[-time*days*n] )
 
+
+
     Y <- H %*% eta +
       S %*% theta1 +
       A.prev * theta2 +
-      A * (beta10 + H[,1] %*% beta11 + S[,1] %*% beta12) +
+      A * (beta10 + H[,c(1:n.h.prime), drop=FALSE] %*% beta11 + S[,c(1:n.s.prime), drop=FALSE] %*% beta12) +
       eps
 
-    dfs[[rep]] <- data.frame(ID, OBS, SLOT, H=H, S=S, A, A.prev, eps, Y)
+    dfs[[rep]] <- data.frame(ID, OBS, DAY, SLOT, H=H, S=S, A, A.prev, eps, Y)
 
   }
   return(dfs)

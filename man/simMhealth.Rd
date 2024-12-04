@@ -16,7 +16,7 @@ simMhealth(
   beta10,
   beta11,
   beta12,
-  p,
+  p = 0.5,
   print_progress = FALSE
 )
 }
@@ -60,5 +60,18 @@ A list of data frames that contains
 }
 }
 \description{
-\deqn{Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t}
+\deqn{Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t + \epsilon}
+}
+\details{
+\deqn{something}
+
+\deqn{\begin{align*}
+H &= (\bar{h}_1, \bar{h}_2, \bar{h}_3),\\
+h_1 &= \bar{1}_n,\\
+h_2&\sim Normal(0,1), \\
+h_3&= h_2^2, \\
+\eta&=(30,20,10), \\
+\end{align*}}
+
+\deqn{some equation}
 }

@@ -1,8 +1,18 @@
 # boruvka simulation
 library(MASS)
 
-expit <- function(x) 1/(1+exp(-x))
+#' Title
+#'
+#' @param x
+#'
+#' @return
+expit <- function(x) {1/(1+exp(-x))}
 
+#' Title
+#'
+#' @param n
+#'
+#' @return
 create_corr_matrix <- function(n) {
   corr_matrix <- matrix(0, n, n)
   for (i in 1:n) {
@@ -13,7 +23,18 @@ create_corr_matrix <- function(n) {
   return(corr_matrix)
 }
 
-ee <- function(param, Y, S, A, rho.hat, w) {
+#' Title
+#'
+#' @param param
+#' @param Y
+#' @param S
+#' @param A
+#' @param rho.hat
+#' @param w
+#'
+#' @return
+#' @export
+ee.boruvka <- function(param, Y, S, A, rho.hat, w) {
   alpha10 <- param[1]
   alpha11 <- param[2]
   beta1 <- param[3]
@@ -26,6 +47,17 @@ ee <- function(param, Y, S, A, rho.hat, w) {
   return(U)
 }
 
+#' Title
+#'
+#' @param param
+#' @param Y
+#' @param S
+#' @param A
+#' @param rho.hat
+#' @param w
+#'
+#' @return
+#' @export
 gee_ind <- function(param, Y, S, A, rho.hat, w) {
   alpha10 <- param[1]
   alpha11 <- param[2]
@@ -39,6 +71,22 @@ gee_ind <- function(param, Y, S, A, rho.hat, w) {
   return(U)
 }
 
+#' Title
+#'
+#' @param At_1
+#' @param At
+#' @param St_1
+#' @param St
+#' @param xi
+#' @param eta1
+#' @param eta2
+#' @param theta1
+#' @param theta2
+#' @param beta10
+#' @param beta11
+#'
+#' @return
+#' @export
 simulate.boruvka <- function(At_1, At, St_1, St, xi, eta1, eta2, theta1, theta2, beta10, beta11) {
   E.St <- expit(xi * At_1) - (1 - expit(xi * At_1))
   #pt_1 <- expit(eta1 * At_2 + eta2 * St_1)

@@ -99,7 +99,8 @@ ee6.4.improved <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
 #'
 #' @return U (scalar) estimating equation sum
 #' @export
-ee.cor.2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
+ee.cor.2 <- function( beta, y, a, h, s, p_a, cum_d, dose,
+                      baseline=NULL, timevar=NULL, b.prime=NULL, t.prime=NULL) {
   T.dp <- ncol(y)
   a_5 <- generate_regimes(ncol(a), dose)
   #U <- matrix(0, nrow = ncol(s), ncol = 1)
@@ -138,8 +139,6 @@ ee.cor.2 <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
   U <- U / nrow(y)
   return(U)
 }
-
-
 #' Get Simulated Results
 #'
 #' @param m number of simulated datasets
@@ -164,15 +163,15 @@ get.sim.rslts <-function(m, dfs, dose, print_progress=FALSE) {
     }
 
     df.wide <- dfs[[rep]] |>
-      dplyr::select(ID,DAY,SLOT,Y,A,H,S) |>
+      dplyr::select(ID,DAY,SLOT,Y,A,H2,S1) |>
       dplyr::group_by(ID,DAY) |>
-      tidyr::pivot_wider(names_from=SLOT, values_from=c(Y,A,S)) |>
+      tidyr::pivot_wider(names_from=SLOT, values_from=c(Y,A,S1)) |>
       as.matrix()
 
     y <- df.wide[,c("Y_1", "Y_2", "Y_3", "Y_4", "Y_5")]
     a <- df.wide[,c("A_1", "A_2", "A_3", "A_4", "A_5")]
-    h <- df.wide[,"H", drop=FALSE]
-    s <- df.wide[,c("S_1", "S_2", "S_3", "S_4", "S_5")]
+    h <- df.wide[,"H2", drop=FALSE]
+    s <- df.wide[,c("S1_1", "S1_2", "S1_3", "S1_4", "S1_5")]
     p <- 0.5
 
     matrix <- get_p_a(a, p)
@@ -189,7 +188,101 @@ get.sim.rslts <-function(m, dfs, dose, print_progress=FALSE) {
 
 
 
-# CeeDose <- function(id, y, trt, baseline, timevar, baselineInter, timevarInter, )
+
+
+
+
+ee.cor.3 <- function( beta, df.wide, dose, y, trt, p_a, time, n.days,
+                      baseline=NULL, timevar=NULL, b.prime=NULL, t.prime=NULL) {
+
+  p <- 0.5; U <- 0; zeros <- lapply(1:5, rep, x = 0)
+  a_5 <- generate_regimes(time, dose)
+
+  if (!is.null(b.prime)) {
+    ate <- cbind(1, df.wide[,b.prime]) |> as.matrix()
+  } else {
+    ate <- rep(1, n.days) |> as.matrix()
+  }
+
+  for (decision in 1:time) {
+    y.name <- paste0(y,"_", decision)
+    a.name <- paste0(trt,"_", decision)
+    if (!is.null(timevar)) {s.name <- paste0(timevar,"_", decision)} else {s.name <- NULL}
+    formula <- as.formula(paste(y.name, paste(c(baseline, s.name, a.name), collapse = " + "), sep = " ~ "))
+
+    fit <- lm(formula, data = df.wide)
+
+    if (!is.null(t.prime)) {
+      ate.name <- c(b.prime,paste0(t.prime,"_", decision))
+      ate <- cbind(1, df.wide[,ate.name]) |> as.matrix()
+    }
+
+    df.m0 <- df.wide[,c(y.name, baseline, s.name, a.name)]
+    df.m1 <- df.wide[,c(y.name, baseline, s.name, a.name)]
+
+    df.m0[,a.name] <- FALSE
+
+    a.interest <- df.wide[, paste(trt, "_", 1:decision, sep="")] |> as.matrix()
+    y.decision <- df.wide[,y.name] |> as.matrix()
+    p.decision <- p_a[,decision]
+    zeros.decision <- zeros[[decision]]
+    for (regime in 1:nrow(a_5)) {
+
+      df.m1[,a.name] <- as.logical(a_5[regime, decision])
+      m1 <- predict(fit, newdata = df.m1)
+      m0 <- predict(fit, newdata = df.m0)
+
+      I_at <- rowSums(a.interest == matrix(a_5[regime, 1:decision], nrow=n.days, ncol=decision, byrow=TRUE)) == decision
+      I_0t <- rowSums(a.interest == matrix(zeros.decision, nrow=n.days, ncol=decision, byrow=TRUE)) == decision
+
+      U <- U + t(ate) %*% (I_at/p.decision * (y.decision - m1) -
+                                    I_0t/p.decision * (y.decision - m0) +
+                                    m1 - m0 - ( as.matrix(ate) %*% beta )/time)
+    }
+  }
+  U <- ( U / n.days )
+  return(U)
+}
+
+CeeDose <- function(df, id, day, slot, y, trt, dose, p,
+                    baseline=NULL, timevar=NULL, b.prime=NULL, t.prime=NULL) {
+  id <- rlang::sym(id)
+  day <- rlang::sym(day)
+  time <- length(unique(df[,slot]))
+  df.wide <- df |>
+    dplyr::select(!!id,!!day,slot,y,trt,baseline,timevar) |>
+    dplyr::group_by(!!id,!!day) |>
+    tidyr::pivot_wider(names_from={{slot}}, values_from=c(y,trt,timevar,t.prime))
+
+  n.days <- nrow(df.wide);n.beta <- length(b.prime)+length(t.prime)+1
+  a <- df.wide[, paste(trt, "_", 1:time, sep="")]
+  matrix <- get_p_a(a, p)
+  cum_d <- matrix$cum_d
+  p_a <- matrix$p_a
+  init_beta <- rep(0,n.beta)
+  ee.cor.3( init_beta, df.wide, dose, y, trt, p_a, time, n.days,
+            baseline, timevar, b.prime, t.prime)
+  rslt <- nleqslv::nleqslv(init_beta, function(beta) ee.cor.3( beta, df.wide, dose, y, trt, p_a, time, n.days,
+                                                               baseline, timevar, b.prime, t.prime))
+  return(rslt$x)
+}
+
+get.sim.rslts2 <- function(m, dfs, id, day, slot, y, trt, dose, p,
+                           baseline=NULL, timevar=NULL, b.prime=NULL, t.prime=NULL,
+                           print_progress=FALSE) {
+
+  n.beta <- length(b.prime)+length(t.prime)+1
+  ee.corr <- matrix(nrow = m, ncol = n.beta)
+  for (rep in 1:m) {
+    if ((rep %% 10 == 0) & (print_progress)) {
+      cat(rep, "\n")
+    }
+    rslt <- CeeDose(dfs[[rep]], id, day, slot, y, trt, dose, p,
+                    baseline, timevar, b.prime, t.prime)
+    ee.corr[rep,] <- rslt
+  }
+  return(rbind(colMeans(ee.corr), apply(ee.corr, 2, sd)))
+}
 
 
 

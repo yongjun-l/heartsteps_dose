@@ -4,7 +4,7 @@
 \alias{get.sim.rslts}
 \title{Get Simulated Results}
 \usage{
-get.sim.rslts(m = 100, dfs = dfs, print_progress = FALSE)
+get.sim.rslts(m, dfs, dose, print_progress = FALSE)
 }
 \arguments{
 \item{m}{number of simulated datasets}

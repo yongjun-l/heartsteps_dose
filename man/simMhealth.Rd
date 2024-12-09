@@ -44,6 +44,8 @@ simMhealth(
 \item{beta12}{interaction effect with some time-varying covariate}
 
 \item{p}{probability of treatment}
+
+\item{print_progress}{(boolean) print progress}
 }
 \value{
 A list of data frames that contains
@@ -65,13 +67,13 @@ A list of data frames that contains
 \details{
 \deqn{something}
 
-\deqn{\begin{align*}
+\deqn{\begin{aligned}
 H &= (\bar{h}_1, \bar{h}_2, \bar{h}_3),\\
 h_1 &= \bar{1}_n,\\
 h_2&\sim Normal(0,1), \\
 h_3&= h_2^2, \\
 \eta&=(30,20,10), \\
-\end{align*}}
+\end{aligned}}
 
 \deqn{some equation}
 }

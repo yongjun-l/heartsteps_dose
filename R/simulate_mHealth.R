@@ -18,18 +18,15 @@ create_corr_matrix <- function(n, rho=0.5) {
 #' Mobile Health Data Simulation
 #'
 #' \deqn{Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t + \epsilon}
-#'
-#' \deqn{something}
-#'
-#' \deqn{\begin{align*}
+#' \deqn{\begin{aligned}
 #' H &= (\bar{h}_1, \bar{h}_2, \bar{h}_3),\\
 #' h_1 &= \bar{1}_n,\\
 #' h_2&\sim Normal(0,1), \\
 #' h_3&= h_2^2, \\
+#' h_{int} &= \bar{1}_n,\\
 #' \eta&=(30,20,10), \\
-#' \end{align*}}
+#' \end{aligned}}
 #'
-#' \deqn{some equation}
 #'
 #' @param m number of replications
 #' @param n number of observations (in HeartSteps, number of participants)
@@ -43,6 +40,7 @@ create_corr_matrix <- function(n, rho=0.5) {
 #' @param beta11 interaction effect with some baseline covariate
 #' @param beta12 interaction effect with some time-varying covariate
 #' @param p probability of treatment
+#' @param print_progress (boolean) print progress
 #'
 #' @return A list of data frames that contains
 #'   - ID: participant ID

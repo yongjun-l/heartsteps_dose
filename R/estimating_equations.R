@@ -159,6 +159,46 @@ get.sim.rslts2 <- function(m, dfs, id, day, slot, y, trt, dose, p,
 
 
 
+#' Get Empirical Results
+#'
+#' @param m number of simulations
+#' @param dfs list of dataframes
+#' @param id (char) id variable
+#' @param day (char) day variable
+#' @param slot (char) slot variable
+#' @param y (char) outcome variable
+#' @param trt (char) treatment variable
+#' @param dose (integer) dose variable
+#' @param p (numeric) probability of single treatment
+#' @param baseline (char vector) baseline variable
+#' @param timevar (char vector) time-varying covariate
+#' @param b.prime (char vector) baseline interaction
+#' @param t.prime (char vector) time-varying interaction
+#' @param print_progress (logical) print progress
+#'
+#' @return matrix of mean and standard deviation of estimated coefficients
+#' @export
+mHealthDose <- function(m, df, id, day, slot, y, trt, dose, p,
+                           baseline=NULL, timevar=NULL, b.prime=NULL, t.prime=NULL,
+                           print_progress=FALSE) {
+  
+  n.beta <- length(b.prime)+length(t.prime)+1
+  ee.corr <- matrix(nrow = m, ncol = n.beta)
+  for (rep in 1:m) {
+    if ((rep %% 10 == 0) & (print_progress)) {
+      cat(rep, "\n")
+    }
+    rslt <- CeeDose(dfs[[rep]], id, day, slot, y, trt, dose, p,
+                    baseline, timevar, b.prime, t.prime)
+    ee.corr[rep,] <- rslt
+  }
+  return(rbind(colMeans(ee.corr), apply(ee.corr, 2, sd)))
+}
+
+
+
+
+
 
 
 

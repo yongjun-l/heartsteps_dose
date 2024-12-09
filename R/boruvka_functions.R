@@ -1,6 +1,3 @@
-# boruvka simulation
-library(MASS)
-
 #' expit function
 #'
 #' @param x numeric

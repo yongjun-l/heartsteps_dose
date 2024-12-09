@@ -1,18 +1,18 @@
 # boruvka simulation
 library(MASS)
 
-#' Title
+#' expit function
 #'
-#' @param x
+#' @param x numeric
 #'
-#' @return
+#' @return expit(x)
 expit <- function(x) {1/(1+exp(-x))}
 
-#' Title
+#' Get correlation matrix
 #'
-#' @param n
+#' @param n integer
 #'
-#' @return
+#' @return (n x n) corr_matrix
 create_corr_matrix <- function(n) {
   corr_matrix <- matrix(0, n, n)
   for (i in 1:n) {
@@ -23,16 +23,16 @@ create_corr_matrix <- function(n) {
   return(corr_matrix)
 }
 
-#' Title
+#' Boruvka estimating equations
 #'
-#' @param param
-#' @param Y
-#' @param S
-#' @param A
-#' @param rho.hat
-#' @param w
+#' @param param (numeric vector)
+#' @param Y (numeric matrix)
+#' @param S (numeric matrix)
+#' @param A (numeric matrix)
+#' @param rho.hat (numeric) Correlation
+#' @param w (numeric matrix) Weights
 #'
-#' @return
+#' @return U (numeric)
 #' @export
 ee.boruvka <- function(param, Y, S, A, rho.hat, w) {
   alpha10 <- param[1]
@@ -47,16 +47,16 @@ ee.boruvka <- function(param, Y, S, A, rho.hat, w) {
   return(U)
 }
 
-#' Title
+#' GEE independent estimating equation
 #'
-#' @param param
-#' @param Y
-#' @param S
-#' @param A
-#' @param rho.hat
-#' @param w
+#' @param param (numeric vector)
+#' @param Y (numeric matrix)
+#' @param S (numeric matrix)
+#' @param A (numeric matrix)
+#' @param rho.hat (numeric) Correlation
+#' @param w (numeric matrix) Weights
 #'
-#' @return
+#' @return U (numeric)
 #' @export
 gee_ind <- function(param, Y, S, A, rho.hat, w) {
   alpha10 <- param[1]
@@ -73,19 +73,19 @@ gee_ind <- function(param, Y, S, A, rho.hat, w) {
 
 #' Title
 #'
-#' @param At_1
-#' @param At
-#' @param St_1
-#' @param St
-#' @param xi
-#' @param eta1
-#' @param eta2
-#' @param theta1
-#' @param theta2
-#' @param beta10
-#' @param beta11
+#' @param At_1 (numeric) previous treatment
+#' @param At (numeric) current treatment
+#' @param St_1 (vector) previous covariate
+#' @param St (vector) current covariate
+#' @param xi (numeric)
+#' @param eta1 (numeric) effect of baseline
+#' @param eta2 (numeric) effect of time-varying covariate
+#' @param theta1 (numeric) effect of something
+#' @param theta2 (numeric) effect of previous treatment
+#' @param beta10 (numeric) effect of treatment
+#' @param beta11 (numeric) effect of interaction
 #'
-#' @return
+#' @return (numeric) simulated value
 #' @export
 simulate.boruvka <- function(At_1, At, St_1, St, xi, eta1, eta2, theta1, theta2, beta10, beta11) {
   E.St <- expit(xi * At_1) - (1 - expit(xi * At_1))

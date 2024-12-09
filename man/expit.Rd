@@ -2,13 +2,16 @@
 % Please edit documentation in R/boruvka_functions.R
 \name{expit}
 \alias{expit}
-\title{Title}
+\title{expit function}
 \usage{
 expit(x)
 }
 \arguments{
-\item{x}{}
+\item{x}{numeric}
+}
+\value{
+expit(x)
 }
 \description{
-Title
+expit function
 }

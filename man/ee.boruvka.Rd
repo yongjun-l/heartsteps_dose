@@ -2,13 +2,26 @@
 % Please edit documentation in R/boruvka_functions.R
 \name{ee.boruvka}
 \alias{ee.boruvka}
-\title{Title}
+\title{Boruvka estimating equations}
 \usage{
 ee.boruvka(param, Y, S, A, rho.hat, w)
 }
 \arguments{
-\item{w}{}
+\item{param}{(numeric vector)}
+
+\item{Y}{(numeric matrix)}
+
+\item{S}{(numeric matrix)}
+
+\item{A}{(numeric matrix)}
+
+\item{rho.hat}{(numeric) Correlation}
+
+\item{w}{(numeric matrix) Weights}
+}
+\value{
+U (numeric)
 }
 \description{
-Title
+Boruvka estimating equations
 }

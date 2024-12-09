@@ -2,7 +2,6 @@
 
 S3method(simulate,boruvka)
 export(ee.boruvka)
-export(ee.cor.2)
 export(gee_ind)
-export(get.sim.rslts)
+export(get.sim.rslts2)
 export(simMhealth)

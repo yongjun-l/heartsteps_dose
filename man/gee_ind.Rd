@@ -2,13 +2,26 @@
 % Please edit documentation in R/boruvka_functions.R
 \name{gee_ind}
 \alias{gee_ind}
-\title{Title}
+\title{GEE independent estimating equation}
 \usage{
 gee_ind(param, Y, S, A, rho.hat, w)
 }
 \arguments{
-\item{w}{}
+\item{param}{(numeric vector)}
+
+\item{Y}{(numeric matrix)}
+
+\item{S}{(numeric matrix)}
+
+\item{A}{(numeric matrix)}
+
+\item{rho.hat}{(numeric) Correlation}
+
+\item{w}{(numeric matrix) Weights}
+}
+\value{
+U (numeric)
 }
 \description{
-Title
+GEE independent estimating equation
 }

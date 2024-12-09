@@ -2,7 +2,7 @@
 % Please edit documentation in R/boruvka_functions.R, R/simulate_mHealth.R
 \name{create_corr_matrix}
 \alias{create_corr_matrix}
-\title{Title}
+\title{Get correlation matrix}
 \usage{
 create_corr_matrix(n, rho = 0.5)
 
@@ -14,10 +14,12 @@ create_corr_matrix(n, rho = 0.5)
 \item{rho}{correlation between adjacent observations}
 }
 \value{
+(n x n) corr_matrix
+
 a correlation matrix with 0.5 correlation between adjacent observations
 }
 \description{
-Title
+Get correlation matrix
 
 Create correlation matrix to simulate epsilon
 }

@@ -46,152 +46,6 @@ get_p_a <- function(a, p) {
 }
 
 
-ee6.4.improved <- function( beta, y, a, h, s, p_a, cum_d, dose ) {
-  T.dp <- ncol(y)
-  a_5 <- generate_regimes(ncol(a), dose)
-  #U <- matrix(0, nrow = ncol(s), ncol = 1)
-  U <- 0
-
-  zeros <- lapply(1:5, rep, x = 0)
-
-  for (decision in 1:T.dp) {
-    df <- as.data.frame(cbind(y=y[,decision], h, a=a[,decision], cum_d=cum_d[,decision]))
-
-    # Fit is too slow
-    fit <- lm(y ~ -1 + h1 + h2 + a, data = df)
-    summary(fit)
-
-    df.m0 <- df
-    df.m1 <- df
-
-    for (regime in 1:nrow(a_5)) {
-      df.m1$a <- a_5[regime, decision]
-      df.m0$a <- 0
-
-      m1 <- predict(fit, newdata = df.m1)
-      m0 <- predict(fit, newdata = df.m0)
-
-      # I mean, even faster here!
-      I_at <- rowSums(a[, 1:decision, drop=FALSE] == matrix(a_5[regime, 1:decision], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
-      I_0t <- rowSums(a[, 1:decision, drop=FALSE] == matrix(zeros[[decision]], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
-
-      U <- U + t(s) %*% (I_at/p_a[,decision] * (y[,decision] - m1) -
-                           I_0t/p_a[,decision] * (y[,decision] - m0) +
-                           m1 - m0 - ( as.matrix(s) %*% beta )/T.dp)
-    }
-  }
-  U <- U / nrow(y)
-  return(U)
-}
-
-
-# Improved I_0t calculation by using zeros list
-#' Title
-#'
-#' @param beta initial beta
-#' @param y (n x time points) outcomes
-#' @param a (n x time points) treatments
-#' @param h (n x p) baseline covariates
-#' @param s (n x q) effect modifying covariates
-#' @param p_a (n x time points) probability of treatment
-#' @param cum_d (n x time points) cumulative dose
-#' @param dose (scalar) dose of interest
-#'
-#' @return U (scalar) estimating equation sum
-#' @export
-ee.cor.2 <- function( beta, y, a, h, s, p_a, cum_d, dose,
-                      baseline=NULL, timevar=NULL, b.prime=NULL, t.prime=NULL) {
-  T.dp <- ncol(y)
-  a_5 <- generate_regimes(ncol(a), dose)
-  #U <- matrix(0, nrow = ncol(s), ncol = 1)
-  U <- 0
-  zeros <- lapply(1:5, rep, x = 0)
-
-  for (decision in 1:T.dp) {
-    s.decision <- cbind(1, s[,decision])
-    df <- data.frame("y"=y[,decision, drop=TRUE], "h"=h, "s"=s[,decision, drop=TRUE], "a"=a[,decision, drop=TRUE], "cum_d"=cum_d[,decision, drop=TRUE])
-    fit <- lm(y ~  h + s + a, data = df)
-    #X<-model.matrix(~h + a + s*a,data = df)
-    #fit <- lm.fit(y =df$y,x=X) # included intercept
-
-    df.m0 <- df
-    df.m1 <- df
-
-    df.m0$a <- 0
-
-    a.interest <- a[, 1:decision, drop=FALSE]
-
-    for (regime in 1:nrow(a_5)) {
-
-      df.m1$a <- a_5[regime, decision]
-
-      m1 <- predict(fit, newdata = df.m1)
-      m0 <- predict(fit, newdata = df.m0)
-
-      I_at <- rowSums(a.interest == matrix(a_5[regime, 1:decision], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
-      I_0t <- rowSums(a.interest == matrix(zeros[[decision]], nrow=nrow(a), ncol=decision, byrow=TRUE)) == decision
-
-      U <- U + t(s.decision) %*% (I_at/p_a[,decision] * (y[,decision] - m1) -
-                                    I_0t/p_a[,decision] * (y[,decision] - m0) +
-                                    m1 - m0 - ( as.matrix(s.decision) %*% beta )/T.dp)
-    }
-  }
-  U <- U / nrow(y)
-  return(U)
-}
-#' Get Simulated Results
-#'
-#' @param m number of simulated datasets
-#' @param dfs list of simulated datasets
-#' @param print_progress print progress if true
-#'
-#' @return matrix with 2 rows: estimated mean, estimated standard deviation
-#' @export
-#'
-#' @examples
-#' df.corr <- simMhealth(m=100, n=37, time=5, days=42,
-#' eta=1, rho=0.5,
-#' theta1=1, theta2=0.8,
-#' beta10=0.5, beta11=0, beta12=0.2,
-#' p=0.5)
-#' rslt <- get.simulated.rslts(m=100, dfs=df.corr, print_progress=TRUE)
-get.sim.rslts <-function(m, dfs, dose, print_progress=FALSE) {
-  ee.corr <- matrix(nrow = m, ncol = 2)
-  for (rep in 1:m) {
-    if ((rep %% 10 == 0) & (print_progress)) {
-      cat(rep, "\n")
-    }
-
-    df.wide <- dfs[[rep]] |>
-      dplyr::select(ID,DAY,SLOT,Y,A,H2,S1) |>
-      dplyr::group_by(ID,DAY) |>
-      tidyr::pivot_wider(names_from=SLOT, values_from=c(Y,A,S1)) |>
-      as.matrix()
-
-    y <- df.wide[,c("Y_1", "Y_2", "Y_3", "Y_4", "Y_5")]
-    a <- df.wide[,c("A_1", "A_2", "A_3", "A_4", "A_5")]
-    h <- df.wide[,"H2", drop=FALSE]
-    s <- df.wide[,c("S1_1", "S1_2", "S1_3", "S1_4", "S1_5")]
-    p <- 0.5
-
-    matrix <- get_p_a(a, p)
-    cum_d <- matrix$cum_d
-    p_a <- matrix$p_a
-
-    init_beta <- c(0,0)
-    ee.cor.2( init_beta, y, a, h, s, p_a, cum_d, dose )
-    rslt <- nleqslv::nleqslv(init_beta, function(beta) ee.cor.2( beta, y, a, h, s, p_a, cum_d, dose ))
-    ee.corr[rep,] <- rslt$x
-  }
-  return(rbind(colMeans(ee.corr), apply(ee.corr, 2, sd)))
-}
-
-
-
-
-
-
-
 ee.cor.3 <- function( beta, df.wide, dose, y, trt, p_a, time, n.days,
                       baseline=NULL, timevar=NULL, b.prime=NULL, t.prime=NULL) {
 
@@ -267,6 +121,25 @@ CeeDose <- function(df, id, day, slot, y, trt, dose, p,
   return(rslt$x)
 }
 
+#' Get Simulation Results
+#'
+#' @param m number of simulations
+#' @param dfs list of dataframes
+#' @param id (char) id variable
+#' @param day (char) day variable
+#' @param slot (char) slot variable
+#' @param y (char) outcome variable
+#' @param trt (char) treatment variable
+#' @param dose (integer) dose variable
+#' @param p (numeric) probability of single treatment
+#' @param baseline (char vector) baseline variable
+#' @param timevar (char vector) time-varying covariate
+#' @param b.prime (char vector) baseline interaction
+#' @param t.prime (char vector) time-varying interaction
+#' @param print_progress (logical) print progress
+#'
+#' @return matrix of mean and standard deviation of estimated coefficients
+#' @export
 get.sim.rslts2 <- function(m, dfs, id, day, slot, y, trt, dose, p,
                            baseline=NULL, timevar=NULL, b.prime=NULL, t.prime=NULL,
                            print_progress=FALSE) {

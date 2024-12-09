@@ -7,7 +7,30 @@
 \method{simulate}{boruvka}(At_1, At, St_1, St, xi, eta1, eta2, theta1, theta2, beta10, beta11)
 }
 \arguments{
-\item{beta11}{}
+\item{At_1}{(numeric) previous treatment}
+
+\item{At}{(numeric) current treatment}
+
+\item{St_1}{(vector) previous covariate}
+
+\item{St}{(vector) current covariate}
+
+\item{xi}{(numeric)}
+
+\item{eta1}{(numeric) effect of baseline}
+
+\item{eta2}{(numeric) effect of time-varying covariate}
+
+\item{theta1}{(numeric) effect of something}
+
+\item{theta2}{(numeric) effect of previous treatment}
+
+\item{beta10}{(numeric) effect of treatment}
+
+\item{beta11}{(numeric) effect of interaction}
+}
+\value{
+(numeric) simulated value
 }
 \description{
 Title

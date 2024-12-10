@@ -4,7 +4,7 @@
 \alias{ee.boruvka}
 \title{Boruvka estimating equations}
 \usage{
-ee.boruvka(param, Y, S, A, rho.hat, w)
+ee.boruvka(param, Y, S, A, rho.hat, w, n, Time)
 }
 \arguments{
 \item{param}{(numeric vector)}
@@ -18,6 +18,10 @@ ee.boruvka(param, Y, S, A, rho.hat, w)
 \item{rho.hat}{(numeric) Correlation}
 
 \item{w}{(numeric matrix) Weights}
+
+\item{n}{(numeric) Number of subjects}
+
+\item{Time}{(numeric) Number of time points}
 }
 \value{
 U (numeric)

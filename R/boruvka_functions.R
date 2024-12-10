@@ -1,24 +1,4 @@
-#' expit function
-#'
-#' @param x numeric
-#'
-#' @return expit(x)
-expit <- function(x) {1/(1+exp(-x))}
-
-#' Get correlation matrix
-#'
-#' @param n integer
-#'
-#' @return (n x n) corr_matrix
-create_corr_matrix <- function(n) {
-  corr_matrix <- matrix(0, n, n)
-  for (i in 1:n) {
-    for (j in 1:n) {
-      corr_matrix[i, j] <- 0.5^(abs(i - j) / 2)
-    }
-  }
-  return(corr_matrix)
-}
+expit <- function(x) 1/(1+exp(-x))
 
 #' Boruvka estimating equations
 #'
@@ -28,10 +8,12 @@ create_corr_matrix <- function(n) {
 #' @param A (numeric matrix)
 #' @param rho.hat (numeric) Correlation
 #' @param w (numeric matrix) Weights
+#' @param n (numeric) Number of subjects
+#' @param Time (numeric) Number of time points
 #'
 #' @return U (numeric)
 #' @export
-ee.boruvka <- function(param, Y, S, A, rho.hat, w) {
+ee.boruvka <- function(param, Y, S, A, rho.hat, w, n, Time) {
   alpha10 <- param[1]
   alpha11 <- param[2]
   beta1 <- param[3]
@@ -52,10 +34,12 @@ ee.boruvka <- function(param, Y, S, A, rho.hat, w) {
 #' @param A (numeric matrix)
 #' @param rho.hat (numeric) Correlation
 #' @param w (numeric matrix) Weights
+#' @param n (numeric) Number of subjects
+#' @param Time (numeric) Number of time points
 #'
 #' @return U (numeric)
 #' @export
-gee_ind <- function(param, Y, S, A, rho.hat, w) {
+gee_ind <- function(param, Y, S, A, rho.hat, w, n, Time) {
   alpha10 <- param[1]
   alpha11 <- param[2]
   beta1 <- param[3]
@@ -84,7 +68,7 @@ gee_ind <- function(param, Y, S, A, rho.hat, w) {
 #'
 #' @return (numeric) simulated value
 #' @export
-simulate.boruvka <- function(At_1, At, St_1, St, xi, eta1, eta2, theta1, theta2, beta10, beta11) {
+simulate_boruvka <- function(At_1, At, St_1, St, xi, eta1, eta2, theta1, theta2, beta10, beta11) {
   E.St <- expit(xi * At_1) - (1 - expit(xi * At_1))
   #pt_1 <- expit(eta1 * At_2 + eta2 * St_1)
   pt <- expit(eta1 * At_1 + eta2 * St)

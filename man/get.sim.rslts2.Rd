@@ -4,22 +4,7 @@
 \alias{get.sim.rslts2}
 \title{Get Simulation Results}
 \usage{
-get.sim.rslts2(
-  m,
-  dfs,
-  id,
-  day,
-  slot,
-  y,
-  trt,
-  dose,
-  p,
-  baseline = NULL,
-  timevar = NULL,
-  b.prime = NULL,
-  t.prime = NULL,
-  print_progress = FALSE
-)
+get.sim.rslts2(m, dfs, id, day, slot, p, ..., print_progress = FALSE)
 }
 \arguments{
 \item{m}{number of simulations}
@@ -32,21 +17,10 @@ get.sim.rslts2(
 
 \item{slot}{(char) slot variable}
 
-\item{y}{(char) outcome variable}
-
-\item{trt}{(char) treatment variable}
-
-\item{dose}{(integer) dose variable}
-
 \item{p}{(numeric) probability of single treatment}
 
-\item{baseline}{(char vector) baseline variable}
-
-\item{timevar}{(char vector) time-varying covariate}
-
-\item{b.prime}{(char vector) baseline interaction}
-
-\item{t.prime}{(char vector) time-varying interaction}
+\item{...}{(char vector) model specification
+variable names of \code{dose}, \code{y}, \code{trt}, \code{baseline}, \code{timevar}, \code{b.prime}, \code{t.prime}}
 
 \item{print_progress}{(logical) print progress}
 }

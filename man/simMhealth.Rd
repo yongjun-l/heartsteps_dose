@@ -63,17 +63,13 @@ A list of data frames that contains
 }
 \description{
 \deqn{Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t + \epsilon}
-}
-\details{
-\deqn{something}
-
 \deqn{\begin{aligned}
 H &= (\bar{h}_1, \bar{h}_2, \bar{h}_3),\\
 h_1 &= \bar{1}_n,\\
 h_2&\sim Normal(0,1), \\
 h_3&= h_2^2, \\
+h_{int} &= \bar{1}_n,\\
 \eta&=(30,20,10), \\
 \end{aligned}}
-
-\deqn{some equation}
+add text version of the document
 }

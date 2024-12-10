@@ -1,2 +1,6 @@
 ^mrt\.dose\.Rproj$
 ^\.Rproj\.user$
+.github
+^LICENSE\.md$
+^heartsteps_dose.Rproj$
+^misc$

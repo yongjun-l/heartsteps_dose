@@ -2,27 +2,25 @@
 % Please edit documentation in R/estimating_equations.R
 \name{mHealthDose}
 \alias{mHealthDose}
-\title{Get Empirical Results}
+\title{mHealthDose fit}
 \usage{
 mHealthDose(
-  m,
   df,
   id,
   day,
   slot,
-  y,
-  trt,
-  dose,
   p,
-  baseline = NULL,
-  timevar = NULL,
-  b.prime = NULL,
-  t.prime = NULL,
+  ...,
+  se = TRUE,
+  boot = 100,
+  cores = 1,
+  ncpus = 1,
+  cl = NULL,
   print_progress = FALSE
 )
 }
 \arguments{
-\item{m}{number of simulations}
+\item{df}{dataset}
 
 \item{id}{(char) id variable}
 
@@ -30,29 +28,26 @@ mHealthDose(
 
 \item{slot}{(char) slot variable}
 
-\item{y}{(char) outcome variable}
-
-\item{trt}{(char) treatment variable}
-
-\item{dose}{(integer) dose variable}
-
 \item{p}{(numeric) probability of single treatment}
 
-\item{baseline}{(char vector) baseline variable}
+\item{...}{model specification
+variable names of \code{dose}, \code{y}, \code{trt}, \code{baseline}, \code{timevar}, \code{b.prime}, \code{t.prime}}
 
-\item{timevar}{(char vector) time-varying covariate}
+\item{se}{(logical) get standard error}
 
-\item{b.prime}{(char vector) baseline interaction}
+\item{boot}{(integer) number of bootstrap samples}
 
-\item{t.prime}{(char vector) time-varying interaction}
+\item{cores}{(integer) number of cores to use for bootstrap}
+
+\item{ncpus}{(integer) number of cores to use for bootstrap}
+
+\item{cl}{(cluster) cluster object}
 
 \item{print_progress}{(logical) print progress}
-
-\item{dfs}{list of dataframes}
 }
 \value{
-matrix of mean and standard deviation of estimated coefficients
+list of coefficients and standard errors
 }
 \description{
-Get Empirical Results
+mHealthDose fit
 }

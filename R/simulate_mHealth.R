@@ -1,5 +1,3 @@
-
-
 #' Create correlation matrix to simulate epsilon
 #'
 #' @param n number of observations (in HeartSteps, number of total randomization points)
@@ -26,7 +24,7 @@ create_corr_matrix <- function(n, rho=0.5) {
 #' h_{int} &= \bar{1}_n,\\
 #' \eta&=(30,20,10), \\
 #' \end{aligned}}
-#'
+#' add text version of the document
 #'
 #' @param m number of replications
 #' @param n number of observations (in HeartSteps, number of participants)

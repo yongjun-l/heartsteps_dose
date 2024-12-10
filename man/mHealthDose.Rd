@@ -10,6 +10,7 @@ mHealthDose(
   day,
   slot,
   p,
+  dose,
   ...,
   se = TRUE,
   boot = 100,
@@ -29,6 +30,8 @@ mHealthDose(
 \item{slot}{(char) slot variable}
 
 \item{p}{(numeric) probability of single treatment}
+
+\item{dose}{(integer) dose}
 
 \item{...}{model specification
 variable names of \code{dose}, \code{y}, \code{trt}, \code{baseline}, \code{timevar}, \code{b.prime}, \code{t.prime}}

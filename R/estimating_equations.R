@@ -57,8 +57,8 @@ get_p_a <- function(a, p) {
 #' @importFrom stats as.formula lm predict rbinom rnorm runif sd
 #' @importFrom utils combn
 #' @return a vector of estimating equation
-ee.cor.3 <- function( beta, df.wide, p_a, time, n.days, dose, y, trt, 
-                      baseline=NULL, timevar=NULL, b.prime=NULL, t.prime=NULL) {
+ee <- function( beta, df.wide, p_a, time, n.days, dose, y, trt, 
+                baseline=NULL, timevar=NULL, b.prime=NULL, t.prime=NULL) {
   
   p <- 0.5; U <- 0; zeros <- lapply(1:5, rep, x = 0)
   a_5 <- generate_regimes(time, dose)
@@ -108,9 +108,9 @@ ee.cor.3 <- function( beta, df.wide, p_a, time, n.days, dose, y, trt,
   return(U)
 }
 
-CeeDose <- function(df, id, day, slot, p, ...) {
+CeeDose <- function(df, id, day, slot, p, dose, ...) {
   args <- list(...)
-  y <- args$y;trt <- args$trt;dose <- args$dose
+  y <- args$y;trt <- args$trt
   baseline <- if ("baseline" %in% names(args)) args$baseline else NULL
   timevar <- if ("timevar" %in% names(args)) args$timevar else NULL
   b.prime <- if ("b.prime" %in% names(args)) args$b.prime else NULL
@@ -128,9 +128,9 @@ CeeDose <- function(df, id, day, slot, p, ...) {
   cum_d <- matrix$cum_d
   p_a <- matrix$p_a
   init_beta <- rep(0,n.beta)
-  ee.cor.3( init_beta, df.wide,  p_a, time, n.days, ...)
-  rslt <- nleqslv::nleqslv(init_beta, function(beta) ee.cor.3( beta, df.wide, p_a, time, n.days, ...))
-  names(rslt$x) <- c("intercept", b.prime, t.prime)
+  ee( init_beta, df.wide,  p_a, time, n.days, dose, ...)
+  rslt <- nleqslv::nleqslv(init_beta, function(beta) ee( beta, df.wide, p_a, time, n.days, dose, ...))
+  names(rslt$x) <- c(paste0(trt, dose, sep=""), paste(paste0(trt, dose, sep=""), c(b.prime, t.prime), sep=":"))
   return(rslt$x)
 }
 
@@ -169,6 +169,7 @@ get.sim.rslts2 <- function(m, dfs, id, day, slot, p, ...,
 #' @param day (char) day variable
 #' @param slot (char) slot variable
 #' @param p (numeric) probability of single treatment
+#' @param dose (integer) dose
 #' @param se (logical) get standard error
 #' @param boot (integer) number of bootstrap samples
 #' @param cores (integer) number of cores to use for bootstrap
@@ -181,10 +182,11 @@ get.sim.rslts2 <- function(m, dfs, id, day, slot, p, ...,
 #' @importFrom parallel mclapply
 #' @import data.table
 #' @export
-mHealthDose <- function(df, id, day, slot, p, ...,
+mHealthDose <- function(df, id, day, slot, p, dose, ...,
                         se = TRUE, boot = 100, cores = 1, ncpus = 1, cl = NULL, 
                         print_progress=FALSE) {
-  point <- CeeDose(df, id, day, slot, p, ...)
+  
+  point <- CeeDose(df, id, day, slot, p, dose, ...)
   
   if (se==TRUE) {
     #v=matrix(rexp(n),nrow=n)
@@ -200,7 +202,7 @@ mHealthDose <- function(df, id, day, slot, p, ...,
     for (rep in 1:boot) {
       boot_df <- cbind(df[boot_dfs[[rep]]$index,], boot_id = boot_dfs[[rep]]$no.repeat.id)
       id="boot_id"
-      rslt <- CeeDose(boot_df, id, day, slot, p, ...)
+      rslt <- CeeDose(boot_df, id, day, slot, p, dose, ...)
       rslts <- rbind(rslts, rslt)
     }
     std.error <- apply(rslts, 2, sd)
@@ -209,17 +211,126 @@ mHealthDose <- function(df, id, day, slot, p, ...,
     std.error <- NULL
   }
   
-  return(
-    structure(
-      list(
-        coefficients = point,
-        std.error = std.error, 
-        ...
-      ),
-      class = "mHealthDose"
-    )
+  return(structure(list(
+    coefficients = point,
+    std.error = std.error, 
+    ...),
+    class = "mHealthDose"
+  )
   )
 }
+
+#' wrapper for multiple doses
+#'
+#' @param df dataset
+#' @param id (char) id variable
+#' @param day (char) day variable
+#' @param slot (char) slot variable
+#' @param p (numeric) probability of single treatment
+#' @param doses 
+#' @param ... 
+#'
+#' @return list of mHealthDose objects
+#' @export
+mHealthDoses <- function(df, id, day, slot, p, doses, ...) {
+  fits <- list()
+  for (dose in doses) {
+    fits[[dose]] <- mHealthDose(df, id, day, slot, p, dose=dose, ...)
+  }
+  return(structure(fits, class = "mHealthDoses"))
+}
+
+#' Title
+#'
+#' @param x (mHealthDoses) object
+#' @param y 
+#' @param ... 
+#'
+#' @return plot dose response relationship
+#' @export
+summary.mHealthDoses <- function(x, y, ...) {
+  allSummaries <- NULL
+  for (dose in 1:length(x)) {
+    allSummaries <- rbind(allSummaries, summary(x[[dose]])$coefficients)
+  }
+  return(structure(allSummaries, class = c("mHealthDoses.summary", "matrix")))
+}
+
+#' Plot treatment effect
+#'
+#' @param x mHealthDoses object
+#' @param y varlevels
+#' @param ... not used
+#'
+#' @return ggplot of treatment effects
+#' @importFrom gridExtra grid.arrange
+#' @export
+#'
+#' @examples fill in later
+plot.mHealthDoses.summary <- function(x, y, ...) {
+  x.df <- as.data.frame(x, check.names = FALSE)
+  terms <- rownames(x.df)
+  x.df2 <- x.df %>%
+    mutate(
+      Treatment = sub(":.*", "", terms),  # Extract treatment
+      Interaction = ifelse(grepl(":", terms), sub(".*:", "", terms), "None"), # Extract interaction or "None"
+      EffectType = ifelse(Interaction == "None", "Main Effect", "Interaction Effect"),
+      lower = `2.5%`,
+      upper = `97.5%`,
+    )
+  
+  # Duplicate main effects for each interaction type
+  x.m <- x.df2 %>%
+    filter(Interaction == "None") %>%
+    slice(rep(1:n(), each = 4)) %>%  # Repeat rows for each interaction
+    mutate(Interaction = rep(c("H1", "H2", "S1", "S2"), times = nrow(.) / 4))
+  
+  # Combine main effects with interactions
+  x <- bind_rows(x.m, x.df2 %>% filter(Interaction != "None"))
+  x$labels <- diag(y[x$Interaction, x$EffectType])
+  
+  plots <- list()
+  for( var in 1:nrow(y)) {
+    plot_data_var <- x |> filter(Interaction == rownames(y)[var])
+    plots[[var]] <- ggplot(plot_data_var, aes(x=Treatment, y=Estimate, fill=labels)) +
+      geom_bar(
+        stat = "identity",
+        position = position_dodge(width = 0.8),  # Offset the bars
+        width = 0.3
+      ) +
+      geom_errorbar(
+        aes(ymin = lower, ymax = upper, group = EffectType),
+        position = position_dodge(width = 0.8),  # Match the dodge width
+        width = 0.2
+      ) +  # Narrow error bars
+      geom_hline(yintercept = 0) +
+      labs(
+        title = "",
+        x = "Dose",
+        y = "Estimate",
+        fill = varlevels[var]
+      ) +
+      theme_minimal() +
+      theme(
+        panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_blank(),
+        legend.title = element_text(size = 10),       # Adjust title size
+        legend.text = element_text(size = 8),         # Adjust text size
+        legend.key.size = unit(0.5, "cm"),            # Adjust key size
+        legend.spacing.y = unit(0.1, "cm")  
+      ) 
+  }
+  plots[["all"]] <- grid.arrange(grobs = plots, ncol = 2)
+  plots[["all"]]
+  invisible(plots)
+}
+
+
+
+
+#Dose=rep(dose,n_beta), "Param"=rownames(sum), 
+
+
 
 
 #' Print mHealthDose object
@@ -237,6 +348,8 @@ print.mHealthDose <- function(x, ...) {
   print(x$std.error)
   invisible(x)
 }
+
+
 
 #' Get coefficients
 #' @param object mHealthDose object
@@ -282,7 +395,7 @@ confint.mHealthDose <- function(object, param, level = 0.95) {
 #' @importFrom stats pnorm setNames qnorm
 #' @export
 pval <- function(object, param) {
-  cf <- confint.mHealthDose(object)
+  cf <- coef.mHealthDose(object)
   ses <- object$std.error
   pnames <- names(ses)
   
@@ -292,7 +405,7 @@ pval <- function(object, param) {
     param <- pnames
   else if (is.numeric(param)) 
     param <- pnames[param]
-  pval <- 2 * (1 - qnorm(abs(cf[param]/ses[param])))
+  pval <- 2 * (1 - pnorm(abs(cf[param]/ses[param])))
   pval <- setNames(pval, param)
   return(pval)
 }
@@ -310,6 +423,7 @@ summary.mHealthDose <- function(object, ...) {
   return(
     structure(
       list(
+        dose = object$dose,
         working = as.formula(paste0(object$y, " ~ ", object$trt, " + ", 
                                     paste0(object$baseline, collapse = " + "), " + ", 
                                     paste0(object$timevar, collapse = " + "))),
@@ -339,17 +453,13 @@ summary.mHealthDose <- function(object, ...) {
 #' @return invisible 
 #' @export
 print.summary.mHealthDose <- function(x, ...) {
-  cat("Working Model:\n")
-  cat(noquote(deparse(x$working)))
-  cat("\n\n")
-  cat("Treatment Model:\n")
-  cat(noquote(deparse(x$treatment)))
-  cat("\n\n")
+  cat("Dose: ", x$dose, "\n\n")
+  cat("Working Model:\n", noquote(deparse(x$working)), "\n\n")
+  cat("Treatment Model:\n", noquote(deparse(x$treatment)),"\n\n")
   cat("Coefficients:\n")
   print(x$coefficients)
   invisible(x)
 }
-
 
 
 

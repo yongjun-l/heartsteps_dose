@@ -14,12 +14,16 @@ comment = "#>"
 )
 ```
 
-```{r setup}
+
+```{r}
 library(mrt.dose)
 m=5; n=20; time=5; days=5; eta=c(1,2,3,4); rho=0;
 theta1=c(3,2,1); theta2=0; beta10=1; beta11=0; beta12=0; p=0.5; dose=1
 
 df.corr <- simMhealth(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p)
+```
+
+```{r}
 fit <- mHealthDose(df.corr[[1]], id="ID", day="DAY", slot="SLOT", p, 
                    dose=dose, y="Y", trt="A",
                    baseline=c("H1", "H2"), timevar=c("S1", "S2"), 
@@ -30,4 +34,22 @@ coef(fit)
 confint(fit)
 pval(fit)
 summary(fit)
+```
+
+```{r setup}
+fits <- mHealthDoses(df.corr[[1]], id="ID", day="DAY", slot="SLOT", p, 
+                   doses=c(1,2,3,4,5), y="Y", trt="A",
+                   baseline=c("H1", "H2"), timevar=c("S1", "S2"), 
+                   b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
+                   se = TRUE, boot = m, cores = 2, print_progress=FALSE)
+sum <- summary(fits)
+class(sum)
+varlevels <- rbind(H1 = c("Male", "Female"), 
+                     S1 = c("Student", "Non-student"), 
+                     H2 = c("Mean Age", "Mean Age+1"), 
+                     S2 = c("Physical Low", "Physical High"))
+colnames(varlevels) <- c("Main Effect", "Interaction Effect")
+plot(sum, varlevels)
+summary(fits)
+
 ```

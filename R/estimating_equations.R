@@ -130,6 +130,7 @@ CeeDose <- function(df, id, day, slot, p, ...) {
   init_beta <- rep(0,n.beta)
   ee.cor.3( init_beta, df.wide,  p_a, time, n.days, ...)
   rslt <- nleqslv::nleqslv(init_beta, function(beta) ee.cor.3( beta, df.wide, p_a, time, n.days, ...))
+  names(rslt$x) <- c("intercept", b.prime, t.prime)
   return(rslt$x)
 }
 
@@ -207,11 +208,13 @@ mHealthDose <- function(df, id, day, slot, p, ...,
   } else {
     std.error <- NULL
   }
+  
   return(
     structure(
       list(
         coefficients = point,
-        std.error = std.error
+        std.error = std.error, 
+        ...
       ),
       class = "mHealthDose"
     )
@@ -219,8 +222,133 @@ mHealthDose <- function(df, id, day, slot, p, ...,
 }
 
 
+#' Print mHealthDose object
+#'
+#' @param x mHealthDose object
+#' @param ... optional
+#'
+#' @return invisible
+#' @export
+print.mHealthDose <- function(x, ...) {
+  cat("Coefficients:\n")
+  print(x$coefficients)
+  cat("\n")
+  cat("Standard Errors:\n")
+  print(x$std.error)
+  invisible(x)
+}
+
+#' Get coefficients
+#' @param object mHealthDose object
+#' @return coefficients
+#' @export
+coef.mHealthDose <- function(object) {
+  object$coefficients
+}
+
+#' Print confidence interval
+#'
+#' @param object mHealthDose object
+#' @param param parameters of interest
+#' @param level confidence level
+#'
+#' @return custom print function for class mHealthDose
+#' @export
+confint.mHealthDose <- function(object, param, level = 0.95) {
+  cf <- coef.mHealthDose(object)
+  ses <- object$std.error
+  pnames <- names(ses)
+  if (is.matrix(cf)) 
+    cf <- setNames(as.vector(cf), pnames)
+  if (missing(param)) 
+    param <- pnames
+  else if (is.numeric(param)) 
+    param <- pnames[param]
+  a <- (1 - level)/2
+  a <- c(a, 1 - a)
+  pct <- paste0(round(a * 100, 3), "%")
+  ci <- array(NA_real_, dim = c(length(param), 2L), dimnames = list(param, 
+                                                                    pct))
+  ci[] <- cf[param] + ses[param] %o% qnorm(a)
+  return(ci)
+}
+
+#' Get p-values
+#'
+#' @param object mHealthDose object
+#' @param param parameters of interest
+#'
+#' @return p-values
+#' @importFrom stats pnorm setNames qnorm
+#' @export
+pval <- function(object, param) {
+  cf <- confint.mHealthDose(object)
+  ses <- object$std.error
+  pnames <- names(ses)
+  
+  if (is.matrix(cf)) 
+    cf <- setNames(as.vector(cf), pnames)
+  if (missing(param)) 
+    param <- pnames
+  else if (is.numeric(param)) 
+    param <- pnames[param]
+  pval <- 2 * (1 - qnorm(abs(cf[param]/ses[param])))
+  pval <- setNames(pval, param)
+  return(pval)
+}
 
 
+#' mHealthDose summary
+#'
+#' @param object mHealthDose object
+#' @param ... summary
+#'
+#' @return the summary object
+#' @importFrom stats as.formula
+#' @export 
+summary.mHealthDose <- function(object, ...) {
+  return(
+    structure(
+      list(
+        working = as.formula(paste0(object$y, " ~ ", object$trt, " + ", 
+                                    paste0(object$baseline, collapse = " + "), " + ", 
+                                    paste0(object$timevar, collapse = " + "))),
+        treatment = as.formula(
+          paste0(
+            object$y, " ~ ", object$trt, " + ",
+            paste(
+              paste(
+                object$trt, c(object$b.prime, object$t.prime), sep=":"), 
+              collapse = " + "
+            )
+          )
+        ),
+        coefficients = cbind("Estimate"=coef.mHealthDose(object), 
+                             "Std. Error"=object$std.error, 
+                             "z value"=abs(coef.mHealthDose(object)/object$std.error), 
+                             confint.mHealthDose(object), 
+                             "p-val"=pval(object))
+      ), class = "summary.mHealthDose"))
+}
+
+#' Print Summary
+#'
+#' @param x summary.mHealthDose object
+#' @param ... optional
+#'
+#' @return invisible 
+#' @export
+print.summary.mHealthDose <- function(x, ...) {
+  cat("Working Model:\n")
+  cat(noquote(deparse(x$working)))
+  cat("\n\n")
+  cat("Treatment Model:\n")
+  cat(noquote(deparse(x$treatment)))
+  cat("\n\n")
+  cat("Coefficients:\n")
+  print(x$coefficients)
+  invisible(x)
+}
 
 
 

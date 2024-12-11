@@ -118,6 +118,7 @@ The key aspect of this estimating equation lies in $\sum_{\bar{a}_k \in D}$. Bre
 ## Fit a single dose
 In the function call, `baseline` and `timevar` together defines the working model $m$ and `b.prime` and `t.prime` are subset of `baseline` and `timevar` respectively, and corresponds to $S$ in the estimating equation.
 ```{r}
+#debugonce(mHealthDose)
 fit <- mHealthDose(dfs[[1]], id="ID", day="DAY", slot="SLOT", p,
                    dose=dose, y="Y", trt="A",
                    baseline=c("H1", "H2"), timevar=c("S1", "S2"),
@@ -151,14 +152,14 @@ summary(fit)
 ## Simulation with `mHealthDose()`
 The function `mHealthDose()` can also be used to get simulation results as well as fit a single dataset. To do this, instead of passing a single dataset, `dfs[[1]]`, we just need to pass a list of simulated datasets, `dfs`. The `sim` argument needs to be set to `TRUE` as well. The returned coefficients are the average of all estimated coefficients and standard error is calculated from these estimates. We can see that each of the three estimates converge to $\beta_{10}$, $\beta_{11}$, and $\beta_{12}$ respectively while the working model is misspecified for both baseline and time-varying covariates.
 ```{r}
-m=5; n=10; time=5; days=2; eta=c(3,2,1,4); rho=0.5; theta1=c(3,2,1); theta2=0; 
+m=5; boot=5; n=10; time=5; days=2; eta=c(3,2,1,4); rho=0.5; theta1=c(3,2,1); theta2=0; 
 beta10=1; beta11=0.5; beta12=0.3; p=0.5; dose=1
 dfs <- simMhealth(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p)
 mHealthDose(dfs, id="ID", day="DAY", slot="SLOT", p,
             dose=dose, y="Y", trt="A",
             baseline=c("H1", "H2"), timevar=c("S1", "S2"),
             b.prime=c("H1"), t.prime=c("S1"),
-            boot = m, cores = 2, sim = TRUE, print_progress=FALSE)
+            boot = boot, cores = 2, sim = TRUE, print_progress=FALSE)
 ```
 
 

@@ -149,7 +149,6 @@ CeeDose <- function(df, id, day, slot, p, dose, ...) {
   init_beta <- rep(0,n.beta)
   ee( init_beta, df.wide,  p_a, time, n.days, dose, ...)
   rslt <- nleqslv::nleqslv(init_beta, function(beta) ee( beta, df.wide, p_a, time, n.days, dose, ...))
-  names(rslt$x) <- c(paste0(trt, dose, sep=""), paste(paste0(trt, dose, sep=""), c(b.prime, t.prime), sep=":"))
   return(rslt$x)
 }
 
@@ -188,67 +187,60 @@ mHealthDose <- function(df, id, day, slot, p, dose, ...,
                         boot = 100, cores = 1, cl = NULL, sim = FALSE,
                         print_progress=FALSE) {
   
-  if (sim==FALSE) { boot_dfs <- boot_samples(df, id, B=boot) }
+  if (sim) { boot_dfs <- df } else { boot_dfs <- boot_samples(df, id, B=boot) }
   
-  # # Calling parallel
-  # if ((cores > 1) | length(cl)) {
-  #   
-  #   # Creating the cluster
-  #   if (!length(cl)) {
-  #     cl <- parallel::makeCluster(cores)
-  #     on.exit(parallel::stopCluster(cl))
-  #     
-  #     # Loading R packages
-  #     parallel::clusterEvalQ(cl, library(mrt.dose))
-  #   }
-  #   
-  #   # Calling the function
-  #   rslts <- parallel::parSapply(cl, X=seq_len(boot), function(i) {
-  #     if (sim) {
-  #       boot_df <- df[[rep]]
-  #       boot_id <- id
-  #     } else {
-  #       boot_df <- cbind(df[boot_dfs[[rep]]$index,], boot_id = boot_dfs[[rep]]$no.repeat.id)
-  #       boot_id="boot_id"
-  #     }
-  #     return(CeeDose(boot_df, boot_id, day, slot, p, dose, ...))
-  #   })
-  #   
-  # } else {
-  #   
-  #   # If no parallel apply
-  #   rslts <- sapply(X=seq_len(R), function(i, ...) {
-  #     if (sim) {
-  #       boot_df <- df[[rep]]
-  #       boot_id <- id
-  #     } else {
-  #       boot_df <- cbind(df[boot_dfs[[rep]]$index,], boot_id = boot_dfs[[rep]]$no.repeat.id)
-  #       boot_id="boot_id"
-  #     }
-  #     return(CeeDose(boot_df, boot_id, day, slot, p, dose, ...))
-  #   })
-  # }
-  # #Error in checkForRemoteErrors(val) : 
-  # #  2 nodes produced errors; first error: invalid subscript type 'special'
-  
-  rslts <- mclapply(1:boot, function(rep) {
-    if (sim) {
-      boot_df <- df[[rep]]
-      boot_id <- id
-    } else {
-      boot_df <- cbind(df[boot_dfs[[rep]]$index,], boot_id = boot_dfs[[rep]]$no.repeat.id)
-      boot_id="boot_id"
+  # Calling parallel
+  if ((cores > 1) | length(cl)) {
+    
+    # Creating the cluster
+    if (!length(cl)) {
+      cl <- parallel::makeCluster(cores)
+      on.exit(parallel::stopCluster(cl))
+      
+      # Loading R packages
+      parallel::clusterEvalQ(cl, library(mrt.dose))
     }
-    return(CeeDose(boot_df, boot_id, day, slot, p, dose, ...))
-  }, mc.cores = cores)
-  rslts <- do.call(rbind,rslts)
+    
+    # Calling the function
+    rslts <- parallel::parSapply(cl, X=seq_len(boot), function(i, CeeDose, df, id, day, slot, p, dose, sim, boot_dfs, ...) {
+      if (sim) {
+        boot_df <- df[[i]]
+        boot_id <- id
+      } else {
+        boot_df <- cbind(df[boot_dfs[[i]]$index,], boot_id = boot_dfs[[i]]$no.repeat.id)
+        boot_id <- "boot_id"
+      }
+      # Call the CeeDose function with all required arguments
+      return(CeeDose(boot_df, boot_id, day, slot, p, dose, ...))
+    }, CeeDose = mrt.dose:::CeeDose, df = df, id = id, day = day, slot = slot, p = p, dose = dose, sim = sim, boot_dfs = boot_dfs, ...)
+    
+    
+  } else {
+    
+    # If no parallel apply
+    rslts <- sapply(X = seq_len(boot), function(i, CeeDose, df, id, day, slot, p, dose, sim, boot_dfs, ...) {
+      if (sim) {
+        boot_df <- df[[i]]
+        boot_id <- id
+      } else {
+        boot_df <- cbind(df[boot_dfs[[i]]$index,], boot_id = boot_dfs[[i]]$no.repeat.id)
+        boot_id <- "boot_id"
+      }
+      # Call the CeeDose function with all required arguments
+      return(CeeDose(boot_df, boot_id, day, slot, p, dose, ...))
+    }, CeeDose = mrt.dose:::CeeDose, df = df, id = id, day = day, slot = slot, p = p, dose = dose, sim = sim, boot_dfs = boot_dfs, ...)
+    
+  }
+  args <- list(...)
+  trt <- args$trt; b.prime <- args$b.prime; t.prime <- args$t.prime
+  rownames(rslts) <- c(paste0(trt, dose, sep=""), paste(paste0(trt, dose, sep=""), c(b.prime, t.prime), sep=":")) 
   
-  std.error <- apply(rslts, 2, sd)
+  std.error <- apply(rslts, 1, sd)
   if (sim) 
-    point <- colMeans(rslts)
+    point <- rowMeans(rslts)
   else 
     point <- CeeDose(df, id, day, slot, p, dose, ...)
-  
+  names(point) <- c(paste0(trt, dose, sep=""), paste(paste0(trt, dose, sep=""), c(b.prime, t.prime), sep=":"))
   
   return(structure(list(
     coefficients = point,

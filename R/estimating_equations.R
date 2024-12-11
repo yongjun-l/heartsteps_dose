@@ -227,8 +227,8 @@ mHealthDose <- function(df, id, day, slot, p, dose, ...,
 #' @param day (char) day variable
 #' @param slot (char) slot variable
 #' @param p (numeric) probability of single treatment
-#' @param doses 
-#' @param ... 
+#' @param doses (integer vector) doses
+#' @param ... model specification
 #'
 #' @return list of mHealthDose objects
 #' @export
@@ -242,16 +242,15 @@ mHealthDoses <- function(df, id, day, slot, p, doses, ...) {
 
 #' Title
 #'
-#' @param x (mHealthDoses) object
-#' @param y 
-#' @param ... 
+#' @param object mHealthDoses object
+#' @param ... not used
 #'
 #' @return plot dose response relationship
 #' @export
-summary.mHealthDoses <- function(x, y, ...) {
+summary.mHealthDoses <- function(object, ...) {
   allSummaries <- NULL
-  for (dose in 1:length(x)) {
-    allSummaries <- rbind(allSummaries, summary(x[[dose]])$coefficients)
+  for (dose in 1:length(object)) {
+    allSummaries <- rbind(allSummaries, summary(object[[dose]])$coefficients)
   }
   return(structure(allSummaries, class = c("mHealthDoses.summary", "matrix")))
 }
@@ -264,29 +263,32 @@ summary.mHealthDoses <- function(x, y, ...) {
 #'
 #' @return ggplot of treatment effects
 #' @importFrom gridExtra grid.arrange
+#' @importFrom dplyr mutate filter slice n bind_rows
+#' @import ggplot2
 #' @export
 #'
-#' @examples fill in later
+#' @examples 
+#' # fill in later
 plot.mHealthDoses.summary <- function(x, y, ...) {
   x.df <- as.data.frame(x, check.names = FALSE)
   terms <- rownames(x.df)
-  x.df2 <- x.df %>%
+  x.df2 <- x.df |>
     mutate(
       Treatment = sub(":.*", "", terms),  # Extract treatment
       Interaction = ifelse(grepl(":", terms), sub(".*:", "", terms), "None"), # Extract interaction or "None"
       EffectType = ifelse(Interaction == "None", "Main Effect", "Interaction Effect"),
       lower = `2.5%`,
       upper = `97.5%`,
-    )
+    ) 
   
   # Duplicate main effects for each interaction type
-  x.m <- x.df2 %>%
-    filter(Interaction == "None") %>%
-    slice(rep(1:n(), each = 4)) %>%  # Repeat rows for each interaction
-    mutate(Interaction = rep(c("H1", "H2", "S1", "S2"), times = nrow(.) / 4))
+  x.m <- x.df2 |>
+    filter(Interaction == "None") |>
+    slice(rep(1:n(), each = 4))  # Repeat rows for each interaction
+  x.m$Interaction<-rep(c("H1", "H2", "S1", "S2"), times = nrow(x.m) / 4)
   
   # Combine main effects with interactions
-  x <- bind_rows(x.m, x.df2 %>% filter(Interaction != "None"))
+  x <- bind_rows(x.m, x.df2 |> filter(Interaction != "None"))
   x$labels <- diag(y[x$Interaction, x$EffectType])
   
   plots <- list()

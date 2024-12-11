@@ -20,5 +20,5 @@ ggplot of treatment effects
 Plot treatment effect
 }
 \examples{
-fill in later
+# fill in later
 }

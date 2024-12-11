@@ -17,9 +17,9 @@ mHealthDoses(df, id, day, slot, p, doses, ...)
 
 \item{p}{(numeric) probability of single treatment}
 
-\item{doses}{}
+\item{doses}{(integer vector) doses}
 
-\item{...}{}
+\item{...}{model specification}
 }
 \value{
 list of mHealthDose objects

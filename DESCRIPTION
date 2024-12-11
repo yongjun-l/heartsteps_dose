@@ -22,4 +22,6 @@ Imports:
   dplyr,
   nleqslv,
   data.table,
-  stringr
+  stringr,
+  ggplot2,
+  gridExtra

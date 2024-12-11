@@ -4,14 +4,12 @@
 \alias{summary.mHealthDoses}
 \title{Title}
 \usage{
-\method{summary}{mHealthDoses}(x, y, ...)
+\method{summary}{mHealthDoses}(object, ...)
 }
 \arguments{
-\item{x}{(mHealthDoses) object}
+\item{object}{mHealthDoses object}
 
-\item{y}{}
-
-\item{...}{}
+\item{...}{not used}
 }
 \value{
 plot dose response relationship

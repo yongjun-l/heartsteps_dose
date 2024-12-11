@@ -25,6 +25,6 @@ fit <- mHealthDose(dfs[[1]], id="ID", day="DAY", slot="SLOT", p,
                    dose=dose, y="Y", trt="A",
                    baseline=c("H1", "H2"), timevar=c("S1", "S2"),
                    b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
-                   boot = m, cores = 2, print_progress=FALSE)
+                   boot = m, cores = 1, print_progress=FALSE)
 summary(fit)
 }

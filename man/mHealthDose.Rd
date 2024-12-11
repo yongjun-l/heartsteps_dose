@@ -59,5 +59,5 @@ mHealthDose(dfs, id="ID", day="DAY", slot="SLOT", p,
            dose=dose, y="Y", trt="A",
            baseline=c("H1", "H2"), timevar=c("S1", "S2"),
            b.prime=c("H1"), t.prime=c("S1"),
-           boot = m, cores = 2, sim = TRUE, print_progress=FALSE)
+           boot = m, cores = 1, sim = TRUE, print_progress=FALSE)
 }

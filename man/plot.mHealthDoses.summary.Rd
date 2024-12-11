@@ -27,7 +27,7 @@ fits <- mHealthDoses(dfs, id="ID", day="DAY", slot="SLOT", p,
                      doses=c(1,2,3,4,5), y="Y", trt="A",
                      baseline=c("H1", "H2"), timevar=c("S1", "S2"),
                      b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
-                     boot = m, cores = 2, sim = TRUE)
+                     boot = m, cores = 1, sim = TRUE)
 sum <- summary(fits)
 varlevels <- rbind(H1 = c("Male", "Female"), 
                    S1 = c("Student", "Non-student"), 

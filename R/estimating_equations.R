@@ -182,7 +182,7 @@ CeeDose <- function(df, id, day, slot, p, dose, ...) {
 #'            dose=dose, y="Y", trt="A",
 #'            baseline=c("H1", "H2"), timevar=c("S1", "S2"),
 #'            b.prime=c("H1"), t.prime=c("S1"),
-#'            boot = m, cores = 2, sim = TRUE, print_progress=FALSE)
+#'            boot = m, cores = 1, sim = TRUE, print_progress=FALSE)
 mHealthDose <- function(df, id, day, slot, p, dose, ...,
                         boot = 100, cores = 1, cl = NULL, sim = FALSE,
                         print_progress=FALSE) {
@@ -269,7 +269,7 @@ mHealthDose <- function(df, id, day, slot, p, dose, ...,
 #'                      doses=c(1,2,3,4,5), y="Y", trt="A",
 #'                      baseline=c("H1", "H2"), timevar=c("S1", "S2"),
 #'                      b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
-#'                      boot = m, cores = 2, sim = TRUE)
+#'                      boot = m, cores = 1, sim = TRUE)
 mHealthDoses <- function(df, id, day, slot, p, doses, ...) {
   fits <- list()
   for (dose in doses) {
@@ -295,7 +295,7 @@ mHealthDoses <- function(df, id, day, slot, p, doses, ...) {
 #'                    dose=dose, y="Y", trt="A",
 #'                    baseline=c("H1", "H2"), timevar=c("S1", "S2"),
 #'                    b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
-#'                    boot = m, cores = 2, print_progress=FALSE)
+#'                    boot = m, cores = 1, print_progress=FALSE)
 #' print(fit)
 print.mHealthDose <- function(x, ...) {
   cat("Coefficients:\n")
@@ -321,7 +321,7 @@ print.mHealthDose <- function(x, ...) {
 #'                    dose=dose, y="Y", trt="A",
 #'                    baseline=c("H1", "H2"), timevar=c("S1", "S2"),
 #'                    b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
-#'                    boot = m, cores = 2, print_progress=FALSE)
+#'                    boot = m, cores = 1, print_progress=FALSE)
 #' coef(fit)
 coef.mHealthDose <- function(object, param=NULL) {
   if (is.null(param)) {
@@ -347,7 +347,7 @@ coef.mHealthDose <- function(object, param=NULL) {
 #'                    dose=dose, y="Y", trt="A",
 #'                    baseline=c("H1", "H2"), timevar=c("S1", "S2"),
 #'                    b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
-#'                    boot = m, cores = 2, print_progress=FALSE)
+#'                    boot = m, cores = 1, print_progress=FALSE)
 #' confint(fit)
 confint.mHealthDose <- function(object, param, level = 0.95) {
   cf <- coef.mHealthDose(object)
@@ -384,7 +384,7 @@ confint.mHealthDose <- function(object, param, level = 0.95) {
 #'                    dose=dose, y="Y", trt="A",
 #'                    baseline=c("H1", "H2"), timevar=c("S1", "S2"),
 #'                    b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
-#'                    boot = m, cores = 2, print_progress=FALSE)
+#'                    boot = m, cores = 1, print_progress=FALSE)
 #' pval(fit)
 pval <- function(object, param) {
   cf <- coef.mHealthDose(object)
@@ -418,7 +418,7 @@ pval <- function(object, param) {
 #'                    dose=dose, y="Y", trt="A",
 #'                    baseline=c("H1", "H2"), timevar=c("S1", "S2"),
 #'                    b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
-#'                    boot = m, cores = 2, print_progress=FALSE)
+#'                    boot = m, cores = 1, print_progress=FALSE)
 #' summary(fit)
 summary.mHealthDose <- function(object, ...) {
   dose = object$dose
@@ -459,7 +459,7 @@ summary.mHealthDose <- function(object, ...) {
 #'                    dose=dose, y="Y", trt="A",
 #'                    baseline=c("H1", "H2"), timevar=c("S1", "S2"),
 #'                    b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
-#'                    boot = m, cores = 2, print_progress=FALSE)
+#'                    boot = m, cores = 1, print_progress=FALSE)
 #' summary(fit)
 print.summary.mHealthDose <- function(x, ...) {
   cat("Dose: ", x$dose, "\n\n")
@@ -485,7 +485,7 @@ print.summary.mHealthDose <- function(x, ...) {
 #'                      doses=c(1,2,3,4,5), y="Y", trt="A",
 #'                      baseline=c("H1", "H2"), timevar=c("S1", "S2"),
 #'                      b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
-#'                      boot = m, cores = 2, sim = TRUE)
+#'                      boot = m, cores = 1, sim = TRUE)
 #' summary(fits)
 summary.mHealthDoses <- function(object, ...) {
   allSummaries <- NULL
@@ -515,7 +515,7 @@ summary.mHealthDoses <- function(object, ...) {
 #'                      doses=c(1,2,3,4,5), y="Y", trt="A",
 #'                      baseline=c("H1", "H2"), timevar=c("S1", "S2"),
 #'                      b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
-#'                      boot = m, cores = 2, sim = TRUE)
+#'                      boot = m, cores = 1, sim = TRUE)
 #' sum <- summary(fits)
 #' varlevels <- rbind(H1 = c("Male", "Female"), 
 #'                    S1 = c("Student", "Non-student"), 

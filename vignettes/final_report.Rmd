@@ -123,7 +123,7 @@ fit <- mHealthDose(dfs[[1]], id="ID", day="DAY", slot="SLOT", p,
                    dose=dose, y="Y", trt="A",
                    baseline=c("H1", "H2"), timevar=c("S1", "S2"),
                    b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
-                   boot = m, cores = 2, print_progress=FALSE)
+                   boot = m, cores = 1, print_progress=FALSE)
 ```
 Here, `fit` contains the estimated treatment effect and interaction for the first simulated dataset. It uses `m` bootstrapped samples and `cores` number of cores to run the bootstrap in parallel. The results can be obtained using the following functions:
 ```{r}
@@ -159,7 +159,7 @@ mHealthDose(dfs, id="ID", day="DAY", slot="SLOT", p,
             dose=dose, y="Y", trt="A",
             baseline=c("H1", "H2"), timevar=c("S1", "S2"),
             b.prime=c("H1"), t.prime=c("S1"),
-            boot = boot, cores = 2, sim = TRUE, print_progress=FALSE)
+            boot = boot, cores = 1, sim = TRUE, print_progress=FALSE)
 ```
 
 
@@ -173,7 +173,7 @@ fits <- mHealthDoses(dfs, id="ID", day="DAY", slot="SLOT", p,
                      doses=c(1,2,3,4,5), y="Y", trt="A",
                      baseline=c("H1", "H2"), timevar=c("S1", "S2"),
                      b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
-                     boot = m, cores = 2, sim = TRUE)
+                     boot = m, cores = 1, sim = TRUE)
 summary(fits)
 ```
 

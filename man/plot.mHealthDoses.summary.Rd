@@ -20,5 +20,20 @@ ggplot of treatment effects
 Plot treatment effect
 }
 \examples{
-# fill in later
+m=5; n=10; time=5; days=10; eta=c(3,2,1,4); rho=0.5; theta1=c(3,2,1); theta2=0; 
+beta10=5; beta11=c(3,2); beta12=c(2,1); p=0.5; dose=1
+dfs <- simMhealth(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p)
+fits <- mHealthDoses(dfs, id="ID", day="DAY", slot="SLOT", p,
+                     doses=c(1,2,3,4,5), y="Y", trt="A",
+                     baseline=c("H1", "H2"), timevar=c("S1", "S2"),
+                     b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
+                     boot = m, cores = 2, sim = TRUE)
+sum <- summary(fits)
+varlevels <- rbind(H1 = c("Male", "Female"), 
+                   S1 = c("Student", "Non-student"), 
+                   H2 = c("Mean Age", "Mean Age+1"), 
+                   S2 = c("Physical Low", "Physical High"))
+colnames(varlevels) <- c("Main Effect", "Interaction Effect")
+p <- plot(sum, varlevels)
+p[[1]]
 }

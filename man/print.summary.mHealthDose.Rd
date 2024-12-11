@@ -2,7 +2,7 @@
 % Please edit documentation in R/estimating_equations.R
 \name{print.summary.mHealthDose}
 \alias{print.summary.mHealthDose}
-\title{Print Summary}
+\title{Print Summary of mHealthDose}
 \usage{
 \method{print}{summary.mHealthDose}(x, ...)
 }
@@ -15,5 +15,16 @@
 invisible
 }
 \description{
-Print Summary
+Print Summary of mHealthDose
+}
+\examples{
+m=5; n=10; time=5; days=5; eta=c(0,0,0,0); rho=0; theta1=c(0,0,0); theta2=0; 
+beta10=5; beta11=c(0,0); beta12=c(0,0); p=0.5; dose=1
+dfs <- simMhealth(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p)
+fit <- mHealthDose(dfs[[1]], id="ID", day="DAY", slot="SLOT", p,
+                   dose=dose, y="Y", trt="A",
+                   baseline=c("H1", "H2"), timevar=c("S1", "S2"),
+                   b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
+                   boot = m, cores = 2, print_progress=FALSE)
+summary(fit)
 }

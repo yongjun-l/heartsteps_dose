@@ -12,11 +12,10 @@ mHealthDose(
   p,
   dose,
   ...,
-  se = TRUE,
   boot = 100,
   cores = 1,
-  ncpus = 1,
   cl = NULL,
+  sim = FALSE,
   print_progress = FALSE
 )
 }
@@ -36,15 +35,13 @@ mHealthDose(
 \item{...}{model specification
 variable names of \code{dose}, \code{y}, \code{trt}, \code{baseline}, \code{timevar}, \code{b.prime}, \code{t.prime}}
 
-\item{se}{(logical) get standard error}
-
 \item{boot}{(integer) number of bootstrap samples}
 
 \item{cores}{(integer) number of cores to use for bootstrap}
 
-\item{ncpus}{(integer) number of cores to use for bootstrap}
-
 \item{cl}{(cluster) cluster object}
+
+\item{sim}{(logical) true if simulation setting, false if real data}
 
 \item{print_progress}{(logical) print progress}
 }
@@ -53,4 +50,14 @@ list of coefficients and standard errors
 }
 \description{
 mHealthDose fit
+}
+\examples{
+m=5; n=10; time=5; days=2; eta=c(3,2,1,4); rho=0.5; theta1=c(3,2,1); theta2=0; 
+beta10=1; beta11=0.5; beta12=0.3; p=0.5; dose=1
+dfs <- simMhealth(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p)
+mHealthDose(dfs, id="ID", day="DAY", slot="SLOT", p,
+           dose=dose, y="Y", trt="A",
+           baseline=c("H1", "H2"), timevar=c("S1", "S2"),
+           b.prime=c("H1"), t.prime=c("S1"),
+           boot = m, cores = 2, sim = TRUE, print_progress=FALSE)
 }

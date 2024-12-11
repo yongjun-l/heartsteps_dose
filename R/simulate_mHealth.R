@@ -18,13 +18,17 @@ create_corr_matrix <- function(n, rho=0.5) {
 #' \deqn{Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t + \epsilon}
 #' \deqn{\begin{aligned}
 #' H &= (\bar{h}_1, \bar{h}_2, \bar{h}_3),\\
-#' h_1 &= \bar{1}_n,\\
+#' h_1 &\sim Binomial(0.5), \\
 #' h_2&\sim Normal(0,1), \\
 #' h_3&= h_2^2, \\
-#' h_{int} &= \bar{1}_n,\\
-#' \eta&=(30,20,10), \\
+#' h_{int} &= \bar{1}_n,\\\\
+#' S &= (\bar{s}_1, \bar{s}_2, \bar{s}_3),\\
+#' s_1 &\sim Binomial(0.5), \\
+#' s_2&\sim Normal(0,1), \\
+#' s_3&= s_2^2, 
 #' \end{aligned}}
 #' add text version of the document
+#' h1=rep(rbinom(n, 1, 0.5),each=days*time)
 #'
 #' @param m number of replications
 #' @param n number of observations (in HeartSteps, number of participants)

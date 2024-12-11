@@ -17,3 +17,6 @@ a matrix of all possible dose combinations
 \description{
 Title generate regimes
 }
+\examples{
+# This is an internal function
+}

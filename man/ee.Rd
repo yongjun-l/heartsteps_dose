@@ -50,3 +50,6 @@ a vector of estimating equation
 \description{
 Estimating Equation
 }
+\examples{
+# This is an internal function
+}

@@ -17,3 +17,6 @@ a list of cumulative dose, probability of a_t, and dose weight
 \description{
 Title get regime probability
 }
+\examples{
+# This is an internal function
+}

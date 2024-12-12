@@ -1,16 +1,17 @@
 ---
-title: "Intro to Rcpp"
+title: "mrt.dose: Inferring Optimal Dose in mHealth"
 subtitle: "PHS 7045: Advanced Programming"
 author: "Yongjun Lee"
 date-modified: 2024-12-12
 date: 2024-12-12
 institute: "The University of Utah"
+footer: "Yongjun Lee"
 format:
   revealjs:
     embed-resources: true
     theme: ["default", "style.scss"]
     code-annotations: true
-    slide-number: c
+    slide-number: c/t
 revealjs-plugins:
   - codefocus
 engine: knitr
@@ -397,7 +398,7 @@ summary(fits)
 
 ## Simulate or estimate multiple doses at once 
 $$
-Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (5 + (3,2)H' + (2,1)S_t')A_t +\epsilon
 $$ 
 ```{r multiple demo, echo=TRUE}
 eta=c(3,2,1,4); theta1=c(3,2,1); theta2=0; beta10=5; beta11=c(3,2); beta12=c(2,1);
@@ -422,6 +423,11 @@ varlevels <- rbind(H1 = c("Male", "Female"),
                    S2 = c("Physical Low", "Physical High"))
 colnames(varlevels) <- c("Main Effect", "Interaction Effect")
 p <- plot(summ, varlevels)
+```
+
+## Visualize results
+```{r plot demo2, echo=TRUE}
 p[["H1"]]
 ```
 
+## Thank You

@@ -10,6 +10,7 @@
 boot_samples <- function (dat, sub.id, B) 
 {
   sub.id <- dat[, sub.id]
+  sub.id <- unlist(sub.id)
   unique.id <- unique(sub.id)
   this.index <- sapply(1:B, function(e) {
     sample(unique.id, size = length(unique.id), replace = TRUE)
@@ -24,7 +25,7 @@ boot_samples <- function (dat, sub.id, B)
       }
     }
     x
-  })
+  }) 
   output <- apply(no.repeat.id, 2, function(x) {
     temp <- lapply(x, function(x_i) {
       index <- which(sub.id == stringr::word(x_i, 1, sep = "\\__"))

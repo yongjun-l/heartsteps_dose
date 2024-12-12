@@ -1,0 +1,517 @@
+---
+title: "Optimal Dose for mHealth Interventions"
+author: "Yongjun Lee"
+format: revealjs
+editor: visual
+---
+
+```{r knit-setup, include = FALSE}
+knitr::opts_chunk$set(
+collapse = TRUE, echo = FALSE,
+comment = "#>"
+)
+rm(list = ls())
+```
+
+```{r get data, include=FALSE}
+rm(list=ls())
+setwd("~/Library/CloudStorage/GoogleDrive-yongjun.lee5@gmail.com/My Drive/1. UCI/2024-1 Winter/Tianchen_excursion/HeartStepsV1")
+#gfsteps <- read.csv("./data_files/gfsteps.csv")
+jbsteps <- read.csv("./data_files/jbsteps.csv")
+suggestions <- read.csv("./data_files/suggestions.csv")
+users <- read.csv("./data_files/users.csv")
+
+library(dplyr)
+library(ggplot2)
+
+# gfsteps.clean <- gfsteps |> 
+#   transmute(
+#     id = user.index,
+#     utime = strptime(steps.utime, "%Y-%m-%d %H:%M:%S", tz='UTC'),
+#     steps = steps,
+#     decision.index = decision.index,
+#     slot = slot
+#   )
+jbsteps.clean <- jbsteps |>
+  transmute(
+    id = user.index,
+    datetime = strptime(steps.utime.local, "%Y-%m-%d %H:%M:%S", tz='UTC'),
+    date = as.Date(datetime),
+    time = data.table::as.ITime(datetime),
+    steps = steps,
+    decision.index = decision.index,
+    SLOT = slot
+  )
+suggestions.clean <- suggestions |>
+  transmute(
+    id = user.index,
+    decision.index = decision.index,
+    sugg.ltime = strptime(sugg.decision.utime, "%Y-%m-%d %H:%M:%S", tz='UTC') + sugg.gmtoff,
+    avail = (avail=="True"),
+    send = send,
+    weather = case_when(
+      dec.weather.condition %in% c("Clear", "Scattered Clouds", "Partly Cloudy") ~ "Clear",
+      dec.weather.condition %in% c("Fog", "Haze", "Mostly Cloudy", "Overcast") ~ "Cloudy",
+      dec.weather.condition %in% c("Ice Pellets", "Ice Pellets", "Light Drizzle", "Light Freezing Rain", "Light Rain", "Light Snow", "Light Thunderstorms and Rain", "Rain", "Snow", "Thunderstorm") ~ "Rain/Snow",
+      TRUE ~ NA_character_
+    ) |> as.factor()
+  )
+library(stringr)
+users.clean <- users |>
+  transmute(
+    id = user.index,
+    totaldays = totaldays,
+    age = age,
+    isMale = (gender=="male"),
+    isMarried = (marital=="married"),
+    ethnicity = case_when(
+      ethnicity %in% c("white/caucasian", "asian/pacific islander", "black/african american") ~ ethnicity,
+      TRUE ~ "other"
+    ),
+    isStudent = str_detect(occupation, "student"),
+    haveChildren = (children>0),
+    education = as.factor(education),
+    physical = ipaq.hepa.intake
+  )
+users.clean$isMale <- factor(users.clean$isMale, levels = c(TRUE,FALSE), labels = c("Male", "Female"))
+users.clean$isMarried <- factor(users.clean$isMarried, levels = c(TRUE,FALSE), labels = c("Married", "Not Married"))
+users.clean$ethnicity <- factor(users.clean$ethnicity)
+users.clean$isStudent <- factor(users.clean$isStudent, levels = c(TRUE,FALSE), labels = c("Student", "Not Student"))
+users.clean$haveChildren <- factor(users.clean$haveChildren, levels = c(TRUE,FALSE), labels = c("Yes", "No"))
+users.clean$physical <- factor(users.clean$physical, levels = c(1,2,3), labels = c("Low", "Moderate", "High"))
+
+library(labelled)
+var_label(users.clean) <- list(
+  totaldays = "Total Days",
+  age = "Age",
+  isMale = "Sex",
+  isMarried = "Marital Status",
+  ethnicity = "Ethnicity",
+  isStudent = "Student Status",
+  haveChildren = "Have Children",
+  education = "Education",
+  physical = "Physical Activity"
+)
+
+jbsteps.clean$decision.index |> unique() |> length()
+suggestions.clean$decision.index |> unique() |> length()
+```
+
+```{r missing, include=FALSE}
+# Missingness
+library(mice)
+md.pattern(jbsteps.clean) # 772 missing decision.index and slot. can ignore. they are missing because they are recorded before the first notification slot.
+jbsteps.clean <- jbsteps.clean[complete.cases(as.matrix(jbsteps.clean)),]
+md.pattern(suggestions.clean, rotate.names=TRUE) # weather is missing completely at random. 
+suggestions.clean <- suggestions.clean[complete.cases(as.matrix(suggestions.clean)),]
+md.pattern(users.clean) # no missing values.
+```
+
+```{r aggregate, include=FALSE}
+#Aggregate step count for each slot. For these time slots, either treatment information or outcome information is missing. Complete case analysis.
+jbsteps.agg <- jbsteps.clean |>
+  group_by(id, decision.index) |>
+  dplyr::summarize(date = first(date),
+                   time = mean(time),
+                   SLOT = mean(SLOT),
+                   steps = sum(steps))
+dataset <- jbsteps.agg |>
+  full_join(suggestions.clean, by=c("id", "decision.index")) |>
+  full_join(users.clean, by="id")
+
+md.pattern(dataset, rotate.names=TRUE)
+df <- dataset[complete.cases(as.matrix(dataset)),]
+```
+
+```{r gee df, include=FALSE}
+# GEE dataset needs to be aggregated
+df.gee <- df |>
+  group_by(id, date) |>
+  dplyr::summarize(
+    steps = sum(steps),
+    avail = any(avail),
+    dose = sum(send),
+    dose1 = (sum(send)==1),
+    dose2 = (sum(send)==2),
+    dose3 = (sum(send)==3),
+    dose4 = (sum(send)==4),
+    dose5 = (sum(send)==5),
+    weather = first(weather),
+    totaldays = first(totaldays),
+    age = (first(age) - 35.51351)/10,
+    isMale = first(isMale),
+    isMarried = first(isMarried),
+    ethnicity = first(ethnicity),
+    isStudent = first(isStudent),
+    haveChildren = first(haveChildren),
+    education = first(education),
+    physical = first(physical)
+    )
+```
+
+# Introduction
+
+## Background
+
+-   mHealth and microrandomized trial
+
+-   Causal excursion effect
+
+-   Optimal dose
+
+-   HeartSteps
+
+## Aim
+
+1.  What is the optimal dose of notification for maximizing daily steps?
+2.  Does this does-response relationship differ for age group and student status?
+
+# Data
+
+## Data Description
+
+-   37 participants
+-   Study duration: 42 days
+-   Up to 5 notifications per day (5 slots)
+-   70% probability of receiving a notification
+-   Steps recorded every minute
+-   Steps aggregated over day (GEE), slot(CEE)
+-   Data is available [ ](https://github.com/klasnja/HeartStepsV1).
+
+## Data Visualization
+
+```{r vis}
+dataset.step.raw <- jbsteps.clean |> 
+  full_join(suggestions.clean, by=c("id", "decision.index"))
+plotdf <- dataset.step.raw |> 
+  filter(id==1,
+         date == as.Date("2015-07-23"))#, 
+         #datetime <= as.POSIXct("2015-07-22"))
+plot(plotdf$datetime, plotdf$steps, xlim = c(as.POSIXct("2015-07-23 00:00:00"), as.POSIXct("2015-07-23 23:59:59"))-14400, main="Step counts for user 1 on 2015-07-23", xlab="Time", ylab="Steps")
+abline(v=unique(plotdf$sugg.ltime))
+abline(v=unique(plotdf$sugg.ltime)[c(1,3,4)], col="red", lwd=2)
+```
+
+## Data Visualization
+
+```{r dose vis}
+df.gee |> 
+  ggplot(aes(x=factor(dose), y=steps)) +
+  geom_boxplot() +
+  labs(
+    title = "Steps by Dose",
+    x = "Dose",
+    y = "Daily Step Count"
+  ) +
+  theme_minimal()
+```
+
+## Participant Demographics
+
+```{r demog, results='asis'}
+setwd("~/Library/CloudStorage/GoogleDrive-yongjun.lee5@gmail.com/My Drive/1. UCI/2024-1 Winter/Tianchen_excursion/HeartStepsV1")
+library(gtsummary)
+library(gt)
+tt1 <- users.clean |>
+  select(totaldays,
+         age,
+         isMale,
+         isMarried,
+         ethnicity,
+         isStudent,
+         haveChildren,
+         education,
+         physical
+  ) |>
+  tbl_summary() |>
+  bold_labels() |> 
+  as_gt()
+cat('<div style="max-height:200; overflow-y:auto;">')
+tt1
+cat('</div>')
+```
+
+# Analysis
+
+## GEE Models
+
+$$
+\tiny
+E\left[Y_{daily\ step}\right]=\beta_1I\left(dose=1\right)+\beta_2I\left(dose=2\right)+\beta_3I\left(dose=3\right)\\
+\tiny
++\beta_4I\left(dose=4\right)+\beta_5I\left(dose=5\right)\\
+\tiny
++\beta_6Age+\beta_7Gender+\beta_8Student+\beta_9Physical\;Activity
+$$
+
+$$
+\tiny
+E\left[Y_{daily\ step}\right]=\beta_1I\left(dose=1\right)+\beta_2I\left(dose=2\right)+\beta_3I\left(dose=3\right)\\
+\tiny
++\beta_4I\left(dose=4\right)+\beta_5I\left(dose=5\right)\\
+\tiny
++\beta_6I\left(dose=1\right)Age+\beta_7I\left(dose=2\right)Age+\beta_8I\left(dose=3\right)Age\\
+\tiny
++\beta_9I\left(dose=4\right)Age+\beta_{10}I\left(dose=5\right)Age\\
+\tiny
++\beta_{11}Age+\beta_{12}Gender+\beta_{13}Student+\beta_{14}Physical\;Activity
+$$
+
+## GEE - Aim 1
+
+```{r gee aim1, include=FALSE}
+library(gee)
+gee.unadj <- gee(steps ~ dose1 + dose2 + dose3 + dose4 + dose5, data = df.gee, family = "gaussian", id = id,
+               corstr = "exchangeable")
+# gee.unadj.unstr <- gee(steps ~ dose, data = df.gee, family = "gaussian", id = id,
+#                corstr = "unstructured")
+summ <- round(summary(gee.unadj)$coefficients, 2)
+rslts.gee.unadj <- cbind(summ[,1], summ[,2], summ[,1]-1.96*summ[,4], summ[,1]+1.96*summ[,4])
+#summary(gee.unadj.unstr)
+
+# adjusted
+library(geepack)
+library(splines)
+gee.adj <- geeglm(steps ~ dose1 + dose2 + dose3 + dose4 + dose5 + age + isMale + isStudent + physical, data = df.gee, family = "gaussian", id = id,
+               corstr = "exchangeable")
+gee.adj.sp <- geeglm(steps ~ dose1 + dose2 + dose3 + dose4 + dose5 + ns(age, df=3) + isMale + isStudent + physical, data = df.gee, family = "gaussian", id = id,
+               corstr = "exchangeable")
+QIC(gee.adj)
+QIC(gee.adj.sp)
+
+gee.adj <- gee(steps ~ dose1 + dose2 + dose3 + dose4 + dose5 + age + isMale + isStudent + physical, data = df.gee, family = "gaussian", id = id,
+               corstr = "exchangeable")
+# summary(gee.adj)$coefficients
+
+summ.adj <- round(summary(gee.adj)$coefficients, 2)
+rslts.gee.adj <- cbind(summ.adj[,1], summ.adj[,2], summ.adj[,1]-1.96*summ.adj[,4], summ.adj[,1]+1.96*summ.adj[,4])
+
+rslts.gee.adj1 <- rbind(rslts.gee.adj[1:7,], rep("", 4), rep("(ref)", 4), 
+                       rslts.gee.adj[8,], rep("", 4), rep("(ref)", 4),
+                       rslts.gee.adj[9,], rep("", 4), rep("(ref)", 4),
+                       rslts.gee.adj[10:11,]
+                       )
+rslts.gee <- rbind(rslts.gee.unadj, rslts.gee.adj1)
+rslts.gee
+summ.adj
+```
+
+```{r gee aim1 p}
+
+rslts.gee1 <- cbind(c("Unadjusted", rep("", 5), "Adjusted", rep("", 16)),
+                    c("Intercept", "Dose 1", "Dose 2", "Dose 3", "Dose 4", "Dose 5",
+                         "Intercept", "Dose 1", "Dose 2", "Dose 3", "Dose 4", "Dose 5",
+                         "Age", "Sex", "   Male", "   Female", "Occupation", "   Student", "   Not Student", "Physical Activity", "   Low", "   Moderate", "   High"), rslts.gee)
+colnames(rslts.gee1) <- c("Model", "Variable", "Estimate", "SE", "Lower CI", "Upper CI")
+library(kableExtra)
+rslts.gee1 %>%
+  kable(format = "markdown", row.names = FALSE, escape = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size=15) %>%
+  column_spec(1, bold = TRUE) %>% # Bold the first column
+  row_spec(0, bold = TRUE)
+```
+
+```{r gee aim2, include=FALSE}
+# gee.unadj.age <- geeglm(steps ~ dose1 + dose2 + dose3 + dose4 + dose5 + age + dose1:age + dose2:age + dose3:age + dose4:age + dose5:age, data = df.gee, family = "gaussian", id = id,
+#                corstr = "exchangeable")
+# gee.unadj.sp.age <- geeglm(steps ~ dose1 + dose2 + dose3 + dose4 + dose5 + age + dose1:ns(age,df=3) + dose2:ns(age,df=3) + dose3:ns(age,df=3) + dose4:ns(age,df=3) + dose5:ns(age,df=3), data = df.gee, family = "gaussian", id = id,
+#                corstr = "exchangeable")
+# QIC(gee.unadj.age)
+# QIC(gee.unadj.sp.age)
+# lower QIC for the additive
+gee.unadj.age <- gee(steps ~ dose1 + dose2 + dose3 + dose4 + dose5 + age + dose1:age + dose2:age + dose3:age + dose4:age + dose5:age, data = df.gee, family = "gaussian", id = id,
+               corstr = "exchangeable")
+gee.unadj.stu <- gee(steps ~ dose1 + dose2 + dose3 + dose4 + dose5 + isStudent + dose1:isStudent + dose2:isStudent + dose3:isStudent + dose4:isStudent + dose5:isStudent, data = df.gee, family = "gaussian", id = id,
+               corstr = "exchangeable")
+
+summ.adj.age <- round(summary(gee.unadj.age)$coefficients, 2)
+rslts.gee.inter.age <- cbind(summ.adj.age[,1], summ.adj.age[,2], summ.adj.age[,1]-1.96*summ.adj.age[,4], summ.adj.age[,1]+1.96*summ.adj.age[,4])
+
+summ.adj.stu <- round(summary(gee.unadj.stu)$coefficients, 2)
+rslts.gee.inter.stu <- cbind(summ.adj.stu[,1], summ.adj.stu[,2], summ.adj.stu[,1]-1.96*summ.adj.stu[,4], summ.adj.stu[,1]+1.96*summ.adj.stu[,4])
+```
+
+## GEE - Aim 2 - Age
+
+```{r}
+rslts.gee.inter.age1 <- cbind(c("Intercept", 
+                            "Dose 1", "Dose 2", "Dose 3", "Dose 4", "Dose 5", 
+                            "Age (10 years)", 
+                            "Dose 1:Age", "Dose 2:Age", "Dose 3:Age", 
+                            "Dose 4:Age", "Dose 5:Age"), 
+                          rslts.gee.inter.age)
+colnames(rslts.gee.inter.age1) <- c("Variable", "Estimate", "SE", "Lower CI", "Upper CI")
+rslts.gee.inter.age1 %>%
+  kable(format = "markdown", row.names = FALSE, escape = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size=17) %>%
+  column_spec(1, bold = TRUE) %>% # Bold the first column
+  row_spec(0, bold = TRUE)
+```
+
+## GEE - Aim 2 - Student Status
+
+```{r}
+rslts.gee.inter.stu1 <- cbind(c("Intercept", 
+                            "Dose 1", "Dose 2", "Dose 3", "Dose 4", "Dose 5", 
+                            "Student Status", 
+                            "Dose 1:Student", "Dose 2:Student", "Dose 3:Student", 
+                            "Dose 4:Student", "Dose 5:Student"),
+                          rslts.gee.inter.stu)
+colnames(rslts.gee.inter.stu1) <- c("Variable", "Estimate", "SE", "Lower CI", "Upper CI")
+rslts.gee.inter.stu1 %>%
+  kable(format = "markdown", row.names = FALSE, escape = TRUE) %>%
+  kable_styling(full_width = FALSE, font_size=17) %>%
+  column_spec(1, bold = TRUE) %>% # Bold the first column
+  row_spec(0, bold = TRUE)
+```
+
+## CEE Analysis
+
+-   Estimand $$
+    E[Y(dose=d)-Y(dose=0)\mid S] = S^{\top}\beta
+    $$
+
+-   Estimating Equation
+
+$$
+\tiny
+\tilde{u}=\sum_{i=1}^n\sum_{t=1}^{T}\sum_{k=1}^{K} \frac{1}{{k \choose d}} \sum_{\bar{a}_{k}\in D}
+\left(
+\frac{I(\bar{A}_{t,k,i}=\bar{a}_{k})}{P(\bar{A}_{t,k,i}=\bar{a}_{t,k})} 
+\left( Y_{t,k,i}-m_{1,t,k} \right) -
+\frac{I(\bar{A}_{t,k,t}=\bar{0}_{k})}{P(\bar{A}_{t,k,i}=\bar{0}_{k})} 
+\left( Y_{t,k}-m_{0,t,k} \right) 
++ m_{1,t,k} - m_{0,t,k}
+- \frac{1}{K} S^{\top}\beta
+\right)
+\nu(S) 
+$$
+
+## Simulation Study
+
+$$
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+$$
+
+$$
+\begin{equation}
+\begin{aligned}
+H &= (\bar{h}_1, \bar{h}_2, \bar{h}_3, \bar{h}_{int}),\\
+h_1 &\sim Binomial(0.5), \\
+h_2&\sim Normal(0,1), \\
+h_3&= h_2^2, \\
+h_{int} &= \bar{1}_n,\\
+\eta&=(\eta_1, \eta_2, \eta_3, \eta_4), \\\\
+A_t &\sim Binomial(p),\\
+\end{aligned}
+\qquad\qquad
+\begin{aligned}
+S &=(\bar{s}_1, \bar{s}_2, \bar{s}_3)\\
+s_1 &\sim Binomial(0.5), \\
+s_2&\sim Normal(0,1), \\
+s_3&= s_2^2, \\
+\theta_1&=(\theta_{11}, \theta_{12}, \theta_{13})\\\\\\
+\epsilon&\sim Normal(0,\Sigma)
+\end{aligned}
+\end{equation}
+$$
+
+## Simulation Study
+
+$$
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+$$
+
+$$
+\tiny
+\tilde{u}=\sum_{i=1}^n\sum_{t=1}^{T}\sum_{k=1}^{K} \frac{1}{{k \choose d}} \sum_{\bar{a}_{k}\in D}
+\left(
+\frac{I(\bar{A}_{t,k,i}=\bar{a}_{k})}{P(\bar{A}_{t,k,i}=\bar{a}_{t,k})} 
+\left( Y_{t,k,i}-m_{1,t,k} \right) -
+\frac{I(\bar{A}_{t,k,t}=\bar{0}_{k})}{P(\bar{A}_{t,k,i}=\bar{0}_{k})} 
+\left( Y_{t,k}-m_{0,t,k} \right) 
++ m_{1,t,k} - m_{0,t,k}
+- \frac{1}{K} S^{\top}\beta
+\right)
+\nu(S) 
+$$
+
+## Simulation Study
+
+$$
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+$$
+
+$$
+\tiny
+\tilde{u}=\sum_{i=1}^n\sum_{t=1}^{T}\sum_{k=1}^{K} \frac{1}{{k \choose d}} \sum_{\bar{a}_{k}\in D}
+\left(
+\frac{I(\bar{A}_{t,k,i}=\bar{a}_{k})}{P(\bar{A}_{t,k,i}=\bar{a}_{t,k})} 
+\left( Y_{t,k,i}-m_{1,t,k} \right) -
+\frac{I(\bar{A}_{t,k,t}=\bar{0}_{k})}{P(\bar{A}_{t,k,i}=\bar{0}_{k})} 
+\left( Y_{t,k}-m_{0,t,k} \right) 
++ m_{1,t,k} - m_{0,t,k}
+- \frac{1}{K} S^{\top}\beta
+\right)
+\nu(S) 
+$$
+
+## Simulation Study
+
+$$
+\beta_{10} = 5,\; \beta_{11} = 3,2,\; \beta_{12} = 2,1,\; p = 0.5
+$$
+
+```{r, include=FALSE}
+library(mrt.dose)
+m=5; n=300; time=5; days=10; eta=c(3,2,1,4); rho=0.5; theta1=c(3,2,1); theta2=0; 
+beta10=5; beta11=c(3,2); beta12=c(2,1); p=0.5; dose=1
+dfs <- simMhealth(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p)
+fits <- mHealthDoses(dfs, id="ID", day="DAY", slot="SLOT", p,
+                     doses=c(1,2,3,4,5), y="Y", trt="A",
+                     baseline=c("H1", "H2"), timevar=c("S1", "S2"),
+                     b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
+                     boot = m, cores = 1, sim = TRUE)
+summary(fits)
+```
+
+```{r}
+kable(summary(fits)) |>
+  kable_styling(full_width = FALSE, font_size=15)
+  
+```
+
+## Simulation Study
+
+```{r}
+sum <- summary(fits)
+varlevels <- rbind(H1 = c("Male", "Female"), 
+                   S1 = c("Student", "Non-student"), 
+                   H2 = c("Mean Age", "Mean Age+1"), 
+                   S2 = c("Physical Low", "Physical High"))
+colnames(varlevels) <- c("Main Effect", "Interaction Effect")
+p <- plot(sum, varlevels)
+```
+
+## Discussion
+
+-   The optimal dose of notification for maximizing daily steps is 4.
+-   Treatment effect seem to increase until 4 but decreases at 5.
+-   Treatment works better for non students and younger participants.
+-   The CEE analysis is ongoing.
+
+```{r cee}
+# library(mrt.dose)
+# #debugonce(mHealthDoses)
+# dataset$send <- as.numeric(dataset$send)
+# md.pattern(dataset)
+# fits.unadj <- mHealthDoses(df, id="id", day="date", slot="SLOT", p=0.7,
+#                      doses=c(1,2,3,4,5), y="steps", trt="send",
+#                      boot = 100, cores = 1, sim = FALSE)
+# 
+# fits <- mHealthDoses(dataset, id="id", day="date", slot="SLOT", p=0.7,
+#                      doses=c(1,2,3,4,5), y="steps", trt="sed",
+#                      baseline=c("H1", "H2"), timevar=c("S1", "S2"),
+#                      b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
+#                      boot = 100, cores = 4, sim = FALSE)
+```

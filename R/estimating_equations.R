@@ -33,6 +33,8 @@ generate_regimes <- function(time_points, total_doses) {
 #' @examples 
 #' # This is an internal function
 get_p_a <- function(a, p) {
+  cat("a")
+  print(dim(a))
   cum_d <- matrix(0, nrow = nrow(a), ncol = ncol(a))
   p_a <- matrix(nrow=nrow(a), ncol = ncol(a))
   d_w <- matrix(0, nrow=nrow(a), ncol = ncol(a))
@@ -125,6 +127,8 @@ ee <- function( beta, df.wide, p_a, time, n.days, dose, y, trt,
 #' @param ... model specification
 #'
 #' @return a vector of coefficients
+#' @importFrom dplyr mutate across everything 
+#' @importFrom purrr map_dbl
 #' @examples
 #' # This is an internal function
 CeeDose <- function(df, id, day, slot, p, dose, ...) {
@@ -136,14 +140,19 @@ CeeDose <- function(df, id, day, slot, p, dose, ...) {
   t.prime <- if ("t.prime" %in% names(args)) args$t.prime else NULL
   id <- rlang::sym(id)
   day <- rlang::sym(day)
-  time <- length(unique(df[,slot]))
+  time <- length(unlist(unique(df[,slot])))
   df.wide <- df |>
     dplyr::select(!!id,!!day,slot,y,trt,baseline,timevar) |>
     dplyr::group_by(!!id,!!day) |>
     tidyr::pivot_wider(names_from={{slot}}, values_from=c(y,trt,timevar,t.prime))
   n.days <- nrow(df.wide);n.beta <- length(b.prime)+length(t.prime)+1
   a <- df.wide[, paste(trt, "_", 1:time, sep="")]
-  matrix <- get_p_a(a, p)
+  a.mat <- as.matrix(a)
+  a.mat2 <- a %>%
+    mutate(across(everything(), ~ map_dbl(.x, 1))) %>%  # Extract the first element from each inner list
+    as.matrix()
+  
+  matrix <- get_p_a(a.mat2, p)
   cum_d <- matrix$cum_d
   p_a <- matrix$p_a
   init_beta <- rep(0,n.beta)

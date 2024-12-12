@@ -52,7 +52,7 @@ list of coefficients and standard errors
 mHealthDose fit
 }
 \examples{
-m=5; n=10; time=5; days=2; eta=c(3,2,1,4); rho=0.5; theta1=c(3,2,1); theta2=0; 
+m=5; n=10; time=5; days=2; eta=c(3,2,1,4); rho=0.5; theta1=c(3,2,1); theta2=0;
 beta10=1; beta11=0.5; beta12=0.3; p=0.5; dose=1
 dfs <- simMhealth(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p)
 mHealthDose(dfs, id="ID", day="DAY", slot="SLOT", p,

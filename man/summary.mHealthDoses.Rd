@@ -18,7 +18,7 @@ plot dose response relationship
 mHealthDoses summary
 }
 \examples{
-m=5; n=10; time=5; days=10; eta=c(3,2,1,4); rho=0.5; theta1=c(3,2,1); theta2=0; 
+m=5; n=10; time=5; days=10; eta=c(3,2,1,4); rho=0.5; theta1=c(3,2,1); theta2=0;
 beta10=5; beta11=c(3,2); beta12=c(2,1); p=0.5; dose=1
 dfs <- simMhealth(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p)
 fits <- mHealthDoses(dfs, id="ID", day="DAY", slot="SLOT", p,

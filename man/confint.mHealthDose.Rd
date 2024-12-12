@@ -20,7 +20,7 @@ custom print function for class mHealthDose
 Print confidence interval
 }
 \examples{
-m=5; n=10; time=5; days=5; eta=c(0,0,0,0); rho=0; theta1=c(0,0,0); theta2=0; 
+m=5; n=10; time=5; days=5; eta=c(0,0,0,0); rho=0; theta1=c(0,0,0); theta2=0;
 beta10=5; beta11=c(0,0); beta12=c(0,0); p=0.5; dose=1
 dfs <- simMhealth(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p)
 fit <- mHealthDose(dfs[[1]], id="ID", day="DAY", slot="SLOT", p,

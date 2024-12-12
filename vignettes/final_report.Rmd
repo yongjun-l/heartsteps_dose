@@ -69,7 +69,7 @@ The function `simMhealth` returns a list containing the simulated data frame and
 -   `H1`, `H2`, `S1`, `S2`: Baseline and time-varying covariates
 -   `A`: Treatment
 
-```{r}
+```{r sim demo}
 library(mrt.dose)
 m=5; n=30; time=2; days=2; eta=c(1,2,3,4); rho=0; theta1=c(3,2,1); theta2=0; beta10=1; beta11=0; beta12=0; p=0.5; dose=1
 dfs <- simMhealth(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p)
@@ -117,7 +117,7 @@ The key aspect of this estimating equation lies in $\sum_{\bar{a}_k \in D}$. Bre
 
 ## Fit a single dose
 In the function call, `baseline` and `timevar` together defines the working model $m$ and `b.prime` and `t.prime` are subset of `baseline` and `timevar` respectively, and corresponds to $S$ in the estimating equation.
-```{r}
+```{r mhealth demo}
 #debugonce(mHealthDose)
 fit <- mHealthDose(dfs[[1]], id="ID", day="DAY", slot="SLOT", p,
                    dose=dose, y="Y", trt="A",
@@ -151,7 +151,7 @@ summary(fit)
 
 ## Simulation with `mHealthDose()`
 The function `mHealthDose()` can also be used to get simulation results as well as fit a single dataset. To do this, instead of passing a single dataset, `dfs[[1]]`, we just need to pass a list of simulated datasets, `dfs`. The `sim` argument needs to be set to `TRUE` as well. The returned coefficients are the average of all estimated coefficients and standard error is calculated from these estimates. We can see that each of the three estimates converge to $\beta_{10}$, $\beta_{11}$, and $\beta_{12}$ respectively while the working model is misspecified for both baseline and time-varying covariates.
-```{r}
+```{r sim rslt demo}
 m=5; boot=5; n=10; time=5; days=2; eta=c(3,2,1,4); rho=0.5; theta1=c(3,2,1); theta2=0; 
 beta10=1; beta11=0.5; beta12=0.3; p=0.5; dose=1
 dfs <- simMhealth(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p)
@@ -165,7 +165,7 @@ mHealthDose(dfs, id="ID", day="DAY", slot="SLOT", p,
 
 ## Fit multiple doses
 As we see from $E[Y(dose=d)-Y(dose=0)\mid S] = S^{\top}\beta$, we need to fit separate models for each dose of interest. Using `mHealthDoses()` function, we can fit multiple doses at once. The function call is similar to `mHealthDose` except that `dose` is a vector of doses of interest. This function returns an object of class `mHealthDoses` which has its own `summary()` function. 
-```{r setup}
+```{r multiple demo}
 m=5; n=300; time=5; days=10; eta=c(3,2,1,4); rho=0.5; theta1=c(3,2,1); theta2=0; 
 beta10=5; beta11=c(3,2); beta12=c(2,1); p=0.5; dose=1
 dfs <- simMhealth(m, n, time, days, eta, rho, theta1, theta2, beta10, beta11, beta12, p)
@@ -179,7 +179,7 @@ summary(fits)
 
 ## Plotting the results
 These results are hard to interpret. We can plot these results easily using `plot()`.
-```{r, fig.width=7, fig.height=5, fig.align='center'}
+```{r plot demo, fig.width=7, fig.height=5, fig.align='center'}
 sum <- summary(fits)
 varlevels <- rbind(H1 = c("Male", "Female"), 
                    S1 = c("Student", "Non-student"), 
@@ -190,7 +190,7 @@ p <- plot(sum, varlevels)
 ```
 
 If the user would like to look at the plots individually, this can be achieved as well.
-```{r, fig.width=5, fig.height=3, fig.align='center'}
+```{r plot one demo, fig.width=5, fig.height=3, fig.align='center'}
 p[["H1"]]
 ```
 

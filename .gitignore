@@ -6,3 +6,6 @@ presentation_files
 .RData
 .Rhistory
 inst/doc
+*.png
+*.docx
+*.html

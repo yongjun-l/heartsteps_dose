@@ -1,0 +1,427 @@
+---
+title: "Intro to Rcpp"
+subtitle: "PHS 7045: Advanced Programming"
+author: "Yongjun Lee"
+date-modified: 2024-12-12
+date: 2024-12-12
+institute: "The University of Utah"
+format:
+  revealjs:
+    embed-resources: true
+    theme: ["default", "style.scss"]
+    code-annotations: true
+    slide-number: c
+revealjs-plugins:
+  - codefocus
+engine: knitr
+---
+
+# Intro
+
+```{r}
+#| echo: false
+#| label: setup
+#| include: false
+knitr::opts_chunk$set(eval = TRUE, fig.width = 7, fig.height = 5)
+slides_eval <- TRUE
+```
+
+## Intro Recap
+
+*  mHealth / microrandomized trials / JITAI
+
+*  Causal excursion effect 
+
+*  HeartSteps
+
+*  Optimal Dose
+
+
+## Intro - Dataset
+
+![Image caption](step.dose2.png)
+
+
+## Midterm Overview
+
+*  Simulation
+    *  Need to specify each setting separately
+    *  Not vectorized
+*  Vectorized Estimating equation
+*  Parallelized bootstrapping
+
+# New Features
+
+## Simulate mHealth Data `simMhealth()`
+
+::: { style="font-size: 90%" }
+```r
+library(mrt.dose)
+m=5; n=30; time=2; days=2; 
+eta=c(1,2,3,4); 
+theta1=c(3,2,1); theta2=0; 
+beta10=1; beta11=0; beta12=0; 
+rho=0; p=0.5;
+dfs <- simMhealth(m, n, time, days, eta, rho, 
+                  theta1, theta2, 
+                  beta10, beta11, beta12, p)
+head(round(dfs[[1]],3),8)
+```
+:::
+::: { style="font-size: 80%" }
+$$
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+$$ 
+
+$$
+\begin{equation}
+\begin{aligned}
+H &= (\bar{h}_1, \bar{h}_2, \bar{h}_3, \bar{h}_{int}),\\
+h_1 &\sim Binomial(0.5), \\
+h_2&\sim Normal(0,1), \\
+h_3&= h_2^2, \\
+h_{int} &= \bar{1}_n,\\
+\eta&=(\eta_1, \eta_2, \eta_3, \eta_4), \\\\
+A_t &\sim Binomial(p),\\
+\end{aligned}
+\qquad\qquad
+\begin{aligned}
+S &=(\bar{s}_1, \bar{s}_2, \bar{s}_3)\\
+s_1 &\sim Binomial(0.5), \\
+s_2&\sim Normal(0,1), \\
+s_3&= s_2^2, \\
+\theta_1&=(\theta_{11}, \theta_{12}, \theta_{13})\\\\\\
+\epsilon&\sim Normal(0,\Sigma)
+\end{aligned}
+\end{equation}
+$$
+:::
+
+## Simulate mHealth Data `simMhealth()` (cont.)
+
+::: {style="font-size: 90%" }
+```{r sim rslt demo, echo=TRUE}
+library(mrt.dose)
+m=5; n=30; time=2; days=2; 
+eta=c(1,2,3,4); 
+theta1=c(3,2,1); theta2=0; 
+beta10=1; beta11=0; beta12=0; 
+rho=0; p=0.5; 
+dfs <- simMhealth(m, n, time, days, eta, rho, 
+                  theta1, theta2, 
+                  beta10, beta11, beta12, p)
+head(round(dfs[[1]],3),8)
+```
+:::
+
+
+## Fit Causal Excursion Effects Model `mHealthDose()` {style="font-size: 20pt"}
+
+::: {.incremental}
+*  Estimand 
+
+$$
+E[Y(dose=d)-Y(dose=0)\mid S] = S^{\top}\beta
+$$ 
+
+*  Derived Estimating Equation 
+
+::: {style="font-size: 80%" }
+$$
+\begin{equation}
+\tilde{u}=\sum_{i=1}^n\sum_{t=1}^{T}\sum_{k=1}^{K} \frac{1}{{k \choose d}} \sum_{\bar{a}_{k}\in D}
+\left(
+\frac{I(\bar{A}_{t,k,i}=\bar{a}_{k})}{P(\bar{A}_{t,k,i}=\bar{a}_{t,k})} 
+\left( Y_{t,k,i}-m_{1,t,k} \right) -
+\frac{I(\bar{A}_{t,k,t}=\bar{0}_{k})}{P(\bar{A}_{t,k,i}=\bar{0}_{k})} 
+\left( Y_{t,k}-m_{0,t,k} \right) 
++ m_{1,t,k} - m_{0,t,k}
+- \frac{1}{K} S^{\top}\beta
+\right)
+\nu(S) 
+\end{equation}
+$$ 
+:::
+* Data Generating Model 
+
+::: { style="font-size: 100%" }
+$$
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+$$ 
+:::
+
+:::
+## `fit <- mHealthDose()` {style="font-size: 20pt"}
+
+::: {style="font-size: 60%" }
+$$
+\begin{equation}
+\tilde{u}=\sum_{i=1}^n\sum_{t=1}^{T}\sum_{k=1}^{K} \frac{1}{{k \choose d}} \sum_{\bar{a}_{k}\in D}
+\left(
+\frac{I(\bar{A}_{t,k,i}=\bar{a}_{k})}{P(\bar{A}_{t,k,i}=\bar{a}_{t,k})} 
+\left( Y_{t,k,i}-m_{1,t,k} \right) -
+\frac{I(\bar{A}_{t,k,t}=\bar{0}_{k})}{P(\bar{A}_{t,k,i}=\bar{0}_{k})} 
+\left( Y_{t,k}-m_{0,t,k} \right) 
++ m_{1,t,k} - m_{0,t,k}
+- \frac{1}{K} S^{\top}\beta
+\right)
+\nu(S) 
+\end{equation}
+$$ 
+:::
+::: { style="font-size: 80%" }
+$$
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+$$ 
+:::
+::: { style="font-size: 110%" .incremental}
+```{r mhealth demo, echo=FALSE}
+fit <- mHealthDose(dfs[[1]], id="ID", day="DAY", slot="SLOT", p,
+                   dose=1, y="Y", trt="A",
+                   baseline=c("H1", "H2"), timevar=c("S1", "S2"), # <1>
+                   b.prime=c("H1", "H2"), t.prime=c("S1", "S2"), # <2>
+                   boot = m, cores = 1, print_progress=FALSE)
+```
+```r
+fit <- mHealthDose(dfs[[1]], id="ID", day="DAY", slot="SLOT", p,
+                   dose=1, y="Y", trt="A",
+                   baseline=c("H1", "H2"), timevar=c("S1", "S2"), # <1>
+                   b.prime=c("H1", "H2"), t.prime=c("S1", "S2"), # <2>
+                   boot = m, cores = 1, print_progress=FALSE)
+```
+1. Defines the working model $m_{t,k}$. Tries to model $H, S$.
+2. Defined as $S$ in estimating equation. Tries to model $H', S'$.
+:::
+
+
+## `fit <- mHealthDose()` `print()` {style="font-size: 20pt"}
+::: {style="font-size: 60%" }
+$$
+\begin{equation}
+\tilde{u}=\sum_{i=1}^n\sum_{t=1}^{T}\sum_{k=1}^{K} \frac{1}{{k \choose d}} \sum_{\bar{a}_{k}\in D}
+\left(
+\frac{I(\bar{A}_{t,k,i}=\bar{a}_{k})}{P(\bar{A}_{t,k,i}=\bar{a}_{t,k})} 
+\left( Y_{t,k,i}-m_{1,t,k} \right) -
+\frac{I(\bar{A}_{t,k,t}=\bar{0}_{k})}{P(\bar{A}_{t,k,i}=\bar{0}_{k})} 
+\left( Y_{t,k}-m_{0,t,k} \right) 
++ m_{1,t,k} - m_{0,t,k}
+- \frac{1}{K} S^{\top}\beta
+\right)
+\nu(S) 
+\end{equation}
+$$ 
+:::
+::: { style="font-size: 80%" }
+$$
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+$$ 
+:::
+::: { style="font-size: 110%" }
+```r
+fit <- mHealthDose(dfs[[1]], id="ID", day="DAY", slot="SLOT", p,
+                   dose=1, y="Y", trt="A",
+                   baseline=c("H1", "H2"), timevar=c("S1", "S2"), 
+                   b.prime=c("H1", "H2"), t.prime=c("S1", "S2"), 
+                   boot = m, cores = 1, print_progress=FALSE)
+```
+
+```{r, echo=TRUE}
+print(fit)
+```
+:::
+
+## `fit <- mHealthDose()` `coef()` {style="font-size: 20pt"}
+::: {style="font-size: 60%" }
+$$
+\begin{equation}
+\tilde{u}=\sum_{i=1}^n\sum_{t=1}^{T}\sum_{k=1}^{K} \frac{1}{{k \choose d}} \sum_{\bar{a}_{k}\in D}
+\left(
+\frac{I(\bar{A}_{t,k,i}=\bar{a}_{k})}{P(\bar{A}_{t,k,i}=\bar{a}_{t,k})} 
+\left( Y_{t,k,i}-m_{1,t,k} \right) -
+\frac{I(\bar{A}_{t,k,t}=\bar{0}_{k})}{P(\bar{A}_{t,k,i}=\bar{0}_{k})} 
+\left( Y_{t,k}-m_{0,t,k} \right) 
++ m_{1,t,k} - m_{0,t,k}
+- \frac{1}{K} S^{\top}\beta
+\right)
+\nu(S) 
+\end{equation}
+$$ 
+:::
+::: { style="font-size: 80%" }
+$$
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+$$ 
+:::
+::: { style="font-size: 110%" }
+```r
+fit <- mHealthDose(dfs[[1]], id="ID", day="DAY", slot="SLOT", p,
+                   dose=1, y="Y", trt="A",
+                   baseline=c("H1", "H2"), timevar=c("S1", "S2"), 
+                   b.prime=c("H1", "H2"), t.prime=c("S1", "S2"), 
+                   boot = m, cores = 1, print_progress=FALSE)
+```
+
+```{r, echo=TRUE}
+coef(fit)
+coef(fit, param=c("A1", "A1:H2"))
+```
+:::
+
+
+## `fit <- mHealthDose()` `confint()` {style="font-size: 20pt"}
+::: {style="font-size: 60%" }
+$$
+\begin{equation}
+\tilde{u}=\sum_{i=1}^n\sum_{t=1}^{T}\sum_{k=1}^{K} \frac{1}{{k \choose d}} \sum_{\bar{a}_{k}\in D}
+\left(
+\frac{I(\bar{A}_{t,k,i}=\bar{a}_{k})}{P(\bar{A}_{t,k,i}=\bar{a}_{t,k})} 
+\left( Y_{t,k,i}-m_{1,t,k} \right) -
+\frac{I(\bar{A}_{t,k,t}=\bar{0}_{k})}{P(\bar{A}_{t,k,i}=\bar{0}_{k})} 
+\left( Y_{t,k}-m_{0,t,k} \right) 
++ m_{1,t,k} - m_{0,t,k}
+- \frac{1}{K} S^{\top}\beta
+\right)
+\nu(S) 
+\end{equation}
+$$ 
+:::
+::: { style="font-size: 80%" }
+$$
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+$$ 
+:::
+::: { style="font-size: 110%" .incremental}
+```r
+fit <- mHealthDose(dfs[[1]], id="ID", day="DAY", slot="SLOT", p,
+                   dose=1, y="Y", trt="A",
+                   baseline=c("H1", "H2"), timevar=c("S1", "S2"), 
+                   b.prime=c("H1", "H2"), t.prime=c("S1", "S2"), 
+                   boot = m, cores = 1, print_progress=FALSE)
+```
+
+```{r, echo=TRUE}
+confint(fit)
+confint(fit, param=c("A1", "A1:H2"), level=0.9)
+```
+:::
+
+## `fit <- mHealthDose()` `summary()` {style="font-size: 20pt"}
+::: {style="font-size: 60%" }
+$$
+\begin{equation}
+\tilde{u}=\sum_{i=1}^n\sum_{t=1}^{T}\sum_{k=1}^{K} \frac{1}{{k \choose d}} \sum_{\bar{a}_{k}\in D}
+\left(
+\frac{I(\bar{A}_{t,k,i}=\bar{a}_{k})}{P(\bar{A}_{t,k,i}=\bar{a}_{t,k})} 
+\left( Y_{t,k,i}-m_{1,t,k} \right) -
+\frac{I(\bar{A}_{t,k,t}=\bar{0}_{k})}{P(\bar{A}_{t,k,i}=\bar{0}_{k})} 
+\left( Y_{t,k}-m_{0,t,k} \right) 
++ m_{1,t,k} - m_{0,t,k}
+- \frac{1}{K} S^{\top}\beta
+\right)
+\nu(S) 
+\end{equation}
+$$ 
+:::
+::: { style="font-size: 80%" }
+$$
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+$$ 
+:::
+::: { style="font-size: 110%" .incremental}
+```r
+fit <- mHealthDose(dfs[[1]], id="ID", day="DAY", slot="SLOT", p,
+                   dose=1, y="Y", trt="A",
+                   baseline=c("H1", "H2"), timevar=c("S1", "S2"), 
+                   b.prime=c("H1", "H2"), t.prime=c("S1", "S2"), 
+                   boot = m, cores = 1, print_progress=FALSE)
+```
+
+```{r, echo=TRUE}
+summary(fit)
+```
+:::
+
+## Simulation with `mHealthDose()`
+::: {style="font-size: 60%" }
+$$
+\begin{equation}
+\tilde{u}=\sum_{i=1}^n\sum_{t=1}^{T}\sum_{k=1}^{K} \frac{1}{{k \choose d}} \sum_{\bar{a}_{k}\in D}
+\left(
+\frac{I(\bar{A}_{t,k,i}=\bar{a}_{k})}{P(\bar{A}_{t,k,i}=\bar{a}_{t,k})} 
+\left( Y_{t,k,i}-m_{1,t,k} \right) -
+\frac{I(\bar{A}_{t,k,t}=\bar{0}_{k})}{P(\bar{A}_{t,k,i}=\bar{0}_{k})} 
+\left( Y_{t,k}-m_{0,t,k} \right) 
++ m_{1,t,k} - m_{0,t,k}
+- \frac{1}{K} S^{\top}\beta
+\right)
+\nu(S) 
+\end{equation}
+$$ 
+:::
+::: { style="font-size: 80%" }
+$$
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+$$ 
+:::
+```{r mhealth demo sim, echo=TRUE}
+fit <- mHealthDose(dfs, id="ID", day="DAY", slot="SLOT", p,
+                   dose=1, y="Y", trt="A",
+                   baseline=c("H1", "H2"), timevar=c("S1", "S2"),
+                   b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
+                   boot = m, cores = 1, print_progress=FALSE, sim = TRUE)
+fit
+```
+
+## Simulate or estimate multiple doses at once 
+$$
+E[Y(dose=d)-Y(dose=0)\mid S] = S^{\top}\beta
+$$ 
+
+## Simulate or estimate multiple doses at once 
+$$
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+$$ 
+```r
+eta=c(3,2,1,4); theta1=c(3,2,1); theta2=0; beta10=5; beta11=c(3,2); beta12=c(2,1);
+p=0.5; dose=1; rho=0.5; m=10; n=300; time=5; days=10;
+dfs <- simMhealth(m, n, time, days, eta, rho,
+                  theta1, theta2, beta10, beta11, beta12, p)
+fits <- mHealthDoses(dfs, id="ID", day="DAY", slot="SLOT", p,
+                     doses=c(1,2,3,4,5), y="Y", trt="A",
+                     baseline=c("H1", "H2"), timevar=c("S1", "S2"),
+                     b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
+                     boot = m, cores = 1, sim = TRUE)
+summary(fits)
+```
+
+
+## Simulate or estimate multiple doses at once 
+$$
+Y_{t+1} = \eta H + \theta_1 S_t + \theta_2 A_{t-1} + (\beta_{10} + \beta_{11}H' + \beta_{12}S_t')A_t +\epsilon
+$$ 
+```{r multiple demo, echo=TRUE}
+eta=c(3,2,1,4); theta1=c(3,2,1); theta2=0; beta10=5; beta11=c(3,2); beta12=c(2,1);
+p=0.5; dose=1; rho=0.5; m=10; n=300; time=5; days=10;
+dfs <- simMhealth(m, n, time, days, eta, rho,
+                  theta1, theta2, beta10, beta11, beta12, p)
+fits <- mHealthDoses(dfs, id="ID", day="DAY", slot="SLOT", p,
+                     doses=c(1,2,3,4,5), y="Y", trt="A",
+                     baseline=c("H1", "H2"), timevar=c("S1", "S2"),
+                     b.prime=c("H1", "H2"), t.prime=c("S1", "S2"),
+                     boot = m, cores = 1, sim = TRUE)
+summary(fits)
+```
+
+## Visualize results
+
+```{r plot demo, echo=TRUE}
+summ <- summary(fits)
+varlevels <- rbind(H1 = c("Male", "Female"),
+                   S1 = c("Student", "Non-student"),
+                   H2 = c("Mean Age", "Mean Age+1"),
+                   S2 = c("Physical Low", "Physical High"))
+colnames(varlevels) <- c("Main Effect", "Interaction Effect")
+p <- plot(summ, varlevels)
+p[["H1"]]
+```
+

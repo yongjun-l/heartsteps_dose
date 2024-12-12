@@ -24,52 +24,6 @@ for (rep in 1:m)  {
     cum_d[,decision] <- if(decision==1) {a[,1:decision]} else {rowSums(a[,1:decision])}
     p_a[, decision] <- (p^cum_d[,decision]) * ((1-p)^(decision - cum_d[,decision]))
   }
-  # First, Second setting ----
-  ## Baseline Covariates
-  'h0 <- rep(1, n) # intercept
-  h1 <- rbinom(n, 1, 0.2) # binary covariate
-  h2 <- rnorm(n) # continuous covariate # or ignore this variable
-  h <- cbind(h0, h1, h2)
-
-  ## Effect modifying Covariates
-  s0 <- rep(1, n) # intercept
-  s1 <- rbinom(n, 1, 0.5) # binary covariate
-  s2 <- rnorm(n) # continuous covariate
-  s <- cbind(s0, s1, s2)
-
-  ## Outcome Generation
-  beta <- c(100, 20, 0)
-  eta <- c(50, 0, 0)
-  beta_t <- outer(beta / 5, rep(1, t))
-  eta_t <- outer(eta / 5, rep(1, t))
-
-  eps <- matrix(rnorm(n * 5), nrow = n, ncol = 5)
-  Y <- h %*% eta_t + s %*% beta_t * a + eps
-  Y <- h %*% eta_t + beta_t * a + eps'
-
-
-  # Fourth Setting: Incorporate H ----
-  ## Baseline Covariates
-  'setting="fourth"
-  h0 <- rep(1, n) # intercept
-  h1 <- rbinom(n, 1, 0.5) # binary covariate
-  h2 <- rnorm(n) # continuous covariate # or ignore this variable
-  h <- cbind(h0, h1, h2)
-
-  ## Effect modifying Covariates
-  s0 <- rep(1, n) # intercept
-  s1 <- rbinom(n, 1, 0.5) # binary covariate
-  s2 <- rnorm(n) # continuous covariate
-  s <- cbind(s0, s1, s2)
-
-  ## Outcome Generation
-  beta <- c(20, 0, 0)
-  eta <- c(30, 20, 10)
-  beta_t <- outer(beta , rep(1, t))
-  eta_t <- outer(eta , rep(1, t))
-
-  eps <- matrix(rnorm(n * 5), nrow = n, ncol = 5)
-  Y <- h %*% eta_t + (s %*% beta_t) * a + eps'
 
   # Fifth Setting: Misspecification----
   ## Baseline Covariates

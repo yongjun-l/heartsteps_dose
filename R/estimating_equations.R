@@ -33,8 +33,6 @@ generate_regimes <- function(time_points, total_doses) {
 #' @examples
 #' # This is an internal function
 get_p_a <- function(a, p) {
-  cat("a")
-  print(dim(a))
   cum_d <- matrix(0, nrow = nrow(a), ncol = ncol(a))
   p_a <- matrix(nrow=nrow(a), ncol = ncol(a))
   d_w <- matrix(0, nrow=nrow(a), ncol = ncol(a))
@@ -253,6 +251,7 @@ mHealthDose <- function(df, id, day, slot, p, dose, ...,
   return(structure(list(
     coefficients = point,
     std.error = std.error,
+    dose = dose,
     ...), class = "mHealthDose")
   )
 }
